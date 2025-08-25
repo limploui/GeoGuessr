@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+
+    <!-- Mapillary JS + CSS (CDN) -->
+    <link
+            rel="stylesheet"
+            href="https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.css"
+    />
+    <script src="https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.js"></script>
+
+    <title>Mapillary Viewer</title>
+
+    <style>
+        html, body {
+          height: 100%;
+          margin: 0;
+          padding: 0;
+          background: #000;
+          color: #fff;
+          font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        }
+        /* füllt den gesamten WebView */
+        #mly {
+          position: fixed;
+          inset: 0;
+        }
+        /* optionale Overlay-Fehlerbox */
+        #err {
+          position: fixed;
+          left: 0; right: 0; bottom: 0;
+          padding: 8px 12px;
+          background: rgba(220, 53, 69, 0.9);
+          color: #fff;
+          font-size: 12px;
+          display: none;
+          white-space: pre-wrap;
+        }
+        /* Hinweis wenn JS deaktiviert wäre */
+        noscript {
+          position: fixed; inset: 0;
+          display: grid; place-items: center;
+          background: #111; color: #f55;
+          font-size: 14px; text-align: center;
+          padding: 16px;
+        }
+    </style>
+</head>
+<body>
+<div id="mly"></div>
+<div id="err"></div>
+<noscript>Diese Seite benötigt JavaScript.</noscript>
+
+<script>
+    // -------------------------------
+    // Utility: kompaktes Error-Overlay
+    // -------------------------------
+    (function attachGlobalErrorHandlers() {
+      const errBox = document.getElementById("err");
+      function showErr(msg) {
+        if (!errBox) return;
+        errBox.style.display = "block";
+        errBox.textContent = msg.toString();
+        console.error("[MJS][Overlay]", msg);
+      }
+      window.addEventListener("error", (e) => showErr(e.message || e.error || e));
+      window.addEventListener("unhandledrejection", (e) => showErr(e.reason || e));
+    })();
+
+    // Globaler State
+    window.MLY = {
+      viewer: null,
+      ready: false,
+      queue: [],
+      firstId: null,
+    };
+
+    // Hilfsfunktion: moveTo mit sauberem Logging
+    function tryMove(id, reason) {
+      if (!id) {
+        console.warn("[MJS] tryMove ohne ID:", id, "reason:", reason);
+        return;
+      }
+      if (!window.MLY.viewer) {
+        console.warn("[MJS] tryMove ohne viewer:", id, "reason:", reason);
+        return;
+      }
+      window.MLY.viewer
+        .moveTo(id)
+        .then(() => console.log("[MJS] moveTo OK:", id, "reason:", reason))
+        .catch(err => console.error("[MJS] moveTo FAILED:", id, "reason:", reason, err));
+    }
+
+    // WICHTIG: Stelle sicher, dass mapillary geladen ist
+    function ensureLibraryAvailable() {
+      const ok = (typeof window.mapillary !== "undefined")
+                 && window.mapillary
+                 && typeof window.mapillary.Viewer === "function";
+      console.log("[MJS] mapillary verfügbar:", ok ? "ja" : "nein");
+      return ok;
+    }
+
+    // Initialisierung – wird aus Android (WebView) aufgerufen
+    window.init = function (accessToken, imageId) {
+      console.log("[MJS] init called. mapillary =", typeof window.mapillary);
+
+      // Falls Library noch nicht da ist (sehr selten), kurz verzögert erneut versuchen
+      if (!ensureLibraryAvailable()) {
+        console.warn("[MJS] mapillary noch nicht bereit – retry in 200ms");
+        setTimeout(() => window.init(accessToken, imageId), 200);
+        return;
+      }
+
+      // Falls bereits ein Viewer existiert → Wiederverwendung
+      if (window.MLY.viewer) {
+        console.log("[MJS] Viewer existiert bereits – setze Bild direkt");
+        window.MLY.firstId = imageId;
+        if (window.MLY.ready) {
+          tryMove(imageId, "init_reuse_ready");
+        } else {
+          window.MLY.queue.push(imageId);
+          console.log("[MJS] viewer not ready; queued", imageId);
+        }
+        return;
+      }
+
+      window.MLY.firstId = imageId;
+
+      // Viewer erstellen
+      const { Viewer } = window.mapillary;
+      const v = new Viewer({
+        accessToken: accessToken,   // nur das Token, kein "OAuth "
+        container: 'mly'
+      });
+      window.MLY.viewer = v;
+      console.log("[MJS] Viewer created");
+
+      // Fired wenn Viewer komplett initialisiert ist
+      v.on('load', () => {
+        console.log("[MJS] Viewer ready");
+        window.MLY.ready = true;
+
+        // Falls wir schon eine ID haben -> gleich versuchen
+        if (window.MLY.firstId) {
+          tryMove(window.MLY.firstId, "on_load_firstId");
+        }
+
+        // Warteschlange abarbeiten
+        while (window.MLY.queue.length) {
+          const id = window.MLY.queue.shift();
+          tryMove(id, "on_load_queue");
+        }
+      });
+
+      // Fired bei jedem Bildwechsel
+      v.on('image', e => {
+        const id = e && e.image && e.image.id;
+        console.log("[MJS] Bild geladen:", id);
+      });
+
+      // Watchdog: Falls 'load' wider Erwarten nicht kommt
+      setTimeout(() => {
+        if (!window.MLY.ready) {
+          console.warn("[MJS] Viewer noch nicht ready nach 2000ms – Watchdog versucht moveTo()");
+          if (window.MLY.firstId) {
+            tryMove(window.MLY.firstId, "watchdog");
+          }
+        }
+      }, 2000);
+    };
+
+    // Bildwechsel – wird aus Android aufgerufen
+    window.setImage = function (imageId) {
+      if (!window.MLY.viewer) {
+        console.log("[MJS] setImage vor init; queue", imageId);
+        window.MLY.queue.push(imageId);
+        return;
+      }
+      if (!window.MLY.ready) {
+        console.log("[MJS] viewer not ready; queue", imageId);
+        window.MLY.queue.push(imageId);
+        return;
+      }
+      tryMove(imageId, "setImage");
+    };
+</script>
+</body>
+</html>

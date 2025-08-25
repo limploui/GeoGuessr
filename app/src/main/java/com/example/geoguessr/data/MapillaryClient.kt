@@ -1,4 +1,3 @@
-// MapillaryClient.kt
 package com.example.geoguessr.data
 
 import android.content.Context
@@ -10,6 +9,12 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 class MapillaryClient(context: Context) {
 
@@ -20,7 +25,6 @@ class MapillaryClient(context: Context) {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
-    // Auth-Header nur noch im Header, NICHT mehr als Query-Param
     private val authInterceptor = Interceptor { chain ->
         val req = chain.request().newBuilder()
             .addHeader("Authorization", "OAuth $clientToken")
@@ -45,11 +49,105 @@ class MapillaryClient(context: Context) {
         .build()
         .create(MapillaryApi::class.java)
 
+    // --- DTO fürs UI ---
+    data class ImageData(
+        val id: String,
+        val lon: Double,
+        val lat: Double,
+        val headingDeg: Double?,
+        val thumbUrl: String,
+        val isPano: Boolean
+    )
+
     /**
-     * Holt eine zufällige thumb_1024_url in einer BBox.
-     * BBox-Format: left,bottom,right,top (minLon,minLat,maxLon,maxLat)
-     * Tipp: BBox klein halten (z.B. ~200–500 m Kantenlänge).
+     * Zufälliges Panorama (strict).
      */
+    suspend fun getRandomPano(bbox: String): ImageData? =
+        withContext(Dispatchers.IO) {
+            try {
+                val res = api.getImages(
+                    bbox = bbox.replace(" ", ""),
+                    fields = "id,computed_geometry,computed_compass_angle,thumb_1024_url,is_pano",
+                    limit = 200
+                )
+
+                val panoItems = res.data.orEmpty()
+                    .filter { it.id != null && it.thumb_1024_url != null && it.computed_geometry?.coordinates?.size == 2 }
+                    .filter { it.is_pano == true }
+
+                android.util.Log.d("GeoGuessr", "Gefundene Panoramen: ${panoItems.size}")
+
+                val pick = panoItems.randomOrNull() ?: return@withContext null
+                val coords = pick.computed_geometry!!.coordinates!!
+
+                ImageData(
+                    id = pick.id!!,
+                    lon = coords[0],
+                    lat = coords[1],
+                    headingDeg = pick.computed_compass_angle,
+                    thumbUrl = pick.thumb_1024_url!!,
+                    isPano = true
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("GeoGuessr", "Fehler bei getRandomPano", e)
+                null
+            }
+        }
+
+    /**
+     * Allgemeines Bild – kann Panoramen oder Non-Panos zurückgeben.
+     */
+    suspend fun getRandomImage(bbox: String, onlyPanorama: Boolean? = null): ImageData? =
+        withContext(Dispatchers.IO) {
+            try {
+                val res = api.getImages(
+                    bbox = bbox.replace(" ", ""),
+                    fields = "id,computed_geometry,computed_compass_angle,thumb_1024_url,is_pano",
+                    limit = 200
+                )
+
+                val items = res.data.orEmpty()
+                    .filter { it.id != null && it.thumb_1024_url != null && it.computed_geometry?.coordinates?.size == 2 }
+                    .filter { img ->
+                        when (onlyPanorama) {
+                            true -> img.is_pano == true
+                            false -> img.is_pano == false
+                            null -> true
+                        }
+                    }
+
+                android.util.Log.d("GeoGuessr", "Gefundene Bilder: ${items.size}")
+
+                val pick = items.randomOrNull() ?: return@withContext null
+                val coords = pick.computed_geometry!!.coordinates!!
+
+                ImageData(
+                    id = pick.id!!,
+                    lon = coords[0],
+                    lat = coords[1],
+                    headingDeg = pick.computed_compass_angle,
+                    thumbUrl = pick.thumb_1024_url!!,
+                    isPano = pick.is_pano == true
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("GeoGuessr", "Fehler bei getRandomImage", e)
+                null
+            }
+        }
+
+    // Haversine-Distanz (km)
+    private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val R = 6371.0
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = sin(dLat / 2).pow(2.0) +
+                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
+                sin(dLon / 2).pow(2.0)
+        return 2 * R * asin(min(1.0, sqrt(a)))
+    }
+
+
+
     suspend fun getRandomImageUrl(bbox: String): String? = withContext(Dispatchers.IO) {
         return@withContext try {
             val cleanBbox = bbox.replace(" ", "")
@@ -58,15 +156,14 @@ class MapillaryClient(context: Context) {
                 fields = "id,thumb_1024_url",
                 limit = 200
             )
-            android.util.Log.d("GeoGuessr", "API Response: $res")
             android.util.Log.d("GeoGuessr", "Image count: ${res.data?.size}")
-            android.util.Log.d("GeoGuessr", "Image URLs: ${res.data?.map { it.thumb_1024_url }}")
             val randomUrl = res.data?.mapNotNull { it.thumb_1024_url }?.randomOrNull()
-            android.util.Log.d("GeoGuessr", "Gewählte zufällige URL: $randomUrl")
-            android.util.Log.d("GeoGuessr", "Image URL: $randomUrl")
             randomUrl
         } catch (_: Exception) {
             null
         }
     }
+
+
+
 }
