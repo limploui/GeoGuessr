@@ -27,11 +27,23 @@ class MainActivity : AppCompatActivity() {
 
     // Setze hier dein echtes Mapillary-Token ein
     private val accessToken = "MLY|25128393533414969|53cc9f3a61d67b7e6648f080f4cdff1d"
-
     override fun onCreate(savedInstanceState: Bundle?) {
+
+
         super.onCreate(savedInstanceState)
 
-        // gleich beim Start ein Panorama laden
+        // 1) Eigene Regionen setzen (kannst du frei erweitern/ändern)
+        viewModelTwo.setRegions(
+            bboxes = listOf(
+                doubleArrayOf(13.4030, 52.5190, 13.4068, 52.5210), // Berlin Mitte
+                doubleArrayOf(11.5675, 48.1355, 11.5795, 48.1430), // München Altstadt
+                doubleArrayOf(9.9860, 53.5435, 10.0050, 53.5538),  // Hamburg City
+                doubleArrayOf(6.9400, 50.9325, 6.9650, 50.9465)    // Köln Innenstadt
+            ),
+            names = listOf("Berlin Mitte", "München Altstadt", "Hamburg City", "Köln Innenstadt")
+        )
+
+        // 2) Gleich beim Start ein Bild laden (aus zufälliger Region)
         viewModelTwo.loadRandomImage()
 
         setContent {
@@ -69,13 +81,18 @@ class MainActivity : AppCompatActivity() {
                         }
 
                         composable(Route.Game.path) {
-                            // Dynamische Image-Daten aus ViewModeltwo
                             val item by viewModelTwo.image.observeAsState()
+                            val bbox by viewModelTwo.currentBbox.observeAsState()
 
                             if (item?.id != null) {
+                                val trueLoc: Pair<Double, Double>? =
+                                    if (item!!.lat != 0.0 || item!!.lon != 0.0) Pair(item!!.lat, item!!.lon) else null
+
                                 GameScreen(
                                     accessToken = accessToken,
-                                    imageId = item!!.id,  // <-- dynamische ID
+                                    imageId = item!!.id,
+                                    bbox = bbox,
+                                    trueLocation = trueLoc,
                                     onConfirmGuess = { points ->
                                         vm.finishRound(points)
                                         if (vm.isFinished()) {
@@ -83,7 +100,6 @@ class MainActivity : AppCompatActivity() {
                                                 popUpTo(Route.Start.path) { inclusive = false }
                                             }
                                         } else {
-                                            // Für nächste Runde neues Bild laden
                                             viewModelTwo.loadRandomImage()
                                             nav.navigate(Route.Result.path)
                                         }
@@ -93,6 +109,8 @@ class MainActivity : AppCompatActivity() {
                                 Text("🔄 Lade Panorama...")
                             }
                         }
+
+
 
                         composable(Route.Result.path) {
                             ResultScreen(
