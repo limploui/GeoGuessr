@@ -24,14 +24,18 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     var lastRoundPoints: Int = 0
         private set
 
+    // ⏱️ neu: Sekunden pro Runde (z. B. 60)
+    var roundSeconds: Int = 60
+        private set
+
     fun setMode(m: GameMode) { mode = m }
     fun setTotalRounds(n: Int) { totalRounds = n.coerceIn(1, 10) }
+    fun setRoundSeconds(sec: Int) { roundSeconds = sec.coerceIn(10, 600) } // 10s .. 10min
 
     fun startGame() {
         currentRound = 1
         totalPoints = 0
         lastRoundPoints = 0
-        // Hier könntest du auch gleich das erste Bild laden
     }
 
     fun finishRound(points: Int) {

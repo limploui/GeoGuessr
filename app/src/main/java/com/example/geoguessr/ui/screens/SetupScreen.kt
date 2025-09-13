@@ -12,9 +12,11 @@ import androidx.compose.ui.unit.dp
 fun SetupScreen(
     modeTitle: String,
     initialRounds: Int = 1,
-    onStart: (rounds: Int) -> Unit
+    initialSeconds: Int = 60,           // ⏱️ neu
+    onStart: (rounds: Int, seconds: Int) -> Unit  // ⏱️ neu
 ) {
     var rounds by remember { mutableStateOf(initialRounds) }
+    var seconds by remember { mutableStateOf(initialSeconds) } // 10..600
 
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -22,12 +24,22 @@ fun SetupScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(modeTitle, style = MaterialTheme.typography.headlineMedium)
+
+        // Runden
         Row(verticalAlignment = Alignment.CenterVertically) {
             Button(onClick = { rounds = (rounds - 1).coerceAtLeast(1) }) { Text("-") }
             Text("  Runden $rounds  ", style = MaterialTheme.typography.titleLarge)
             Button(onClick = { rounds = (rounds + 1).coerceAtMost(10) }) { Text("+") }
         }
-        Button(onClick = { onStart(rounds) }, modifier = Modifier.fillMaxWidth()) {
+
+        // ⏱️ Timer (sek)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Button(onClick = { seconds = (seconds - 10).coerceAtLeast(10) }) { Text("-") }
+            Text("  Zeit: ${seconds}s  ", style = MaterialTheme.typography.titleLarge)
+            Button(onClick = { seconds = (seconds + 10).coerceAtMost(600) }) { Text("+") }
+        }
+
+        Button(onClick = { onStart(rounds, seconds) }, modifier = Modifier.fillMaxWidth()) {
             Text("Los geht’s")
         }
     }
