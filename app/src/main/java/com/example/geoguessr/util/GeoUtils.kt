@@ -34,4 +34,22 @@ object GeoUtils {
         val s = max * x * x                   // quadratisch
         return s.roundToInt()
     }
+
+
+    // util/GeoUtils.kt (ergänzen)
+    fun hintMultiplier(hintsUsed: Int): Int {
+        // Vorgabe: 1→5, 2→4, 3→3, 4→2, 5→1
+        // Optional: 0 Tipps → 6 (maximaler Bonus). Falls du kein 0er-Bonus willst: gib hier 5 zurück.
+        return when (hintsUsed) {
+            0 -> 6   // ← optional; ändere auf 5, wenn dir 0 Tipps nicht extra belohnt werden sollen
+            1 -> 5
+            2 -> 4
+            3 -> 3
+            4 -> 2
+            else -> 1
+        }
+    }
+
+
+
 }
