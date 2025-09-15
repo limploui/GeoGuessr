@@ -1,30 +1,37 @@
 // ui/map/OsmdroidMap.kt
 package com.example.geoguessr.ui.map
 
-import android.view.MotionEvent
-import android.view.View
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.events.MapListener
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Marker
-import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.views.overlay.MapEventsOverlay
+import org.osmdroid.views.overlay.Marker
 
 @Composable
 fun OsmdroidMap(
     modifier: Modifier = Modifier,
-    bbox: DoubleArray?, // [minLon, minLat, maxLon, maxLat]
-    guessPoint: Pair<Double, Double>?, // (lat, lon)
-    truthPoint: Pair<Double, Double>?, // (lat, lon) – erst nach Bestätigen sichtbar
+    bbox: DoubleArray?,                      // [minLon, minLat, maxLon, maxLat]
+    guessPoint: Pair<Double, Double>?,       // (lat, lon)
+    truthPoint: Pair<Double, Double>?,       // (lat, lon)
     onTap: (lat: Double, lon: Double) -> Unit
 ) {
-    // Marker-Referenzen über remember halten
-    var mapViewRef by remember { mutableStateOf<MapView?>(null) }
+    var mapView by remember { mutableStateOf<MapView?>(null) }
     var guessMarker by remember { mutableStateOf<Marker?>(null) }
     var truthMarker by remember { mutableStateOf<Marker?>(null) }
+
+    var lastBbox by remember { mutableStateOf<DoubleArray?>(null) }
+
+    // Auto-Fit nur solange aktiv, bis der Nutzer IRGENDEINE Geste gemacht hat
+    var autoFitEnabled by remember { mutableStateOf(true) }
+    // Ein Fit pro BBox-Wechsel
+    var fitDoneForThisBbox by remember { mutableStateOf(false) }
 
     AndroidView(
         modifier = modifier,
@@ -33,18 +40,10 @@ fun OsmdroidMap(
                 setMultiTouchControls(true)
                 isTilesScaledToDpi = true
 
-                // Bounds/Zoom initial setzen, falls vorhanden
-                bbox?.let {
-                    val bb = BoundingBox(
-                        /* north */ it[3], /* east */ it[2],
-                        /* south */ it[1], /* west */ it[0]
-                    )
-                    zoomToBoundingBox(bb, true)
-                }
-
-                // Taps abfangen
+                // Taps → Guess setzen UND Auto-Fit deaktivieren
                 val tapReceiver = object : MapEventsReceiver {
                     override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+                        autoFitEnabled = false           // ✅ Tap zählt als User-Interaktion
                         p?.let { onTap(it.latitude, it.longitude) }
                         return true
                     }
@@ -52,18 +51,48 @@ fun OsmdroidMap(
                 }
                 overlays.add(MapEventsOverlay(tapReceiver))
 
-                mapViewRef = this
+                // Scroll/Zoom → Auto-Fit aus
+                addMapListener(object : MapListener {
+                    override fun onScroll(event: ScrollEvent?): Boolean {
+                        autoFitEnabled = false
+                        return false
+                    }
+                    override fun onZoom(event: ZoomEvent?): Boolean {
+                        autoFitEnabled = false
+                        return false
+                    }
+                })
+
+                mapView = this
             }
         },
         update = { map ->
-            // BBox-Update (z.B. erste Anzeige)
-            bbox?.let {
-                val bb = BoundingBox(it[3], it[2], it[1], it[0])
-                // nur beim ersten Mal oder wenn noch nicht fokussiert
-                if (map.zoomLevelDouble < 3.0) map.zoomToBoundingBox(bb, true)
+            // 1) BBox-Wechsel erkennen
+            val bboxChanged = if (bbox == null || lastBbox == null) {
+                bbox != null && lastBbox == null
+            } else {
+                !lastBbox.contentEquals(bbox)
+            }
+            if (bboxChanged && bbox != null) {
+                lastBbox = bbox.copyOf()
+                fitDoneForThisBbox = false      // neuer Bereich → wieder einmalig fitten
+                autoFitEnabled = true           // Fit darf einmal laufen
             }
 
-            // Guess-Marker zeichnen/aktualisieren (blaue Farbe)
+            // 2) Auto-Fit genau einmal pro BBox (und nur solange kein User interagiert hat)
+            if (bbox != null && autoFitEnabled && !fitDoneForThisBbox) {
+                val bb = BoundingBox(
+                    /*north*/ bbox[3], /*east*/ bbox[2],
+                    /*south*/ bbox[1], /*west*/ bbox[0]
+                )
+                map.zoomToBoundingBox(bb, false)
+                fitDoneForThisBbox = true
+                // Wichtig: nicht sofort wieder deaktivieren — wir lassen autoFitEnabled aktiv,
+                // falls Compose direkt danach noch einmal update aufruft.
+                // Es wird aber später durch Tap/Scroll/Zoom abgeschaltet.
+            }
+
+            // 3) Guess-Marker pflegen
             if (guessPoint != null) {
                 val (lat, lon) = guessPoint
                 val p = GeoPoint(lat, lon)
@@ -72,16 +101,14 @@ fun OsmdroidMap(
                         position = p
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                         title = "Dein Tipp"
-                        // Blau: setIcon via eingebautem Marker-Style (einfach: default lassen),
-                        // alternativ mit eigenem Drawable arbeiten.
                     }
                     map.overlays.add(guessMarker)
-                } else {
+                } else if (guessMarker?.position != p) {
                     guessMarker?.position = p
                 }
             }
 
-            // Truth-Marker zeichnen/aktualisieren (rot)
+            // 4) Truth-Marker pflegen
             if (truthPoint != null) {
                 val (lat, lon) = truthPoint
                 val p = GeoPoint(lat, lon)
@@ -90,11 +117,9 @@ fun OsmdroidMap(
                         position = p
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                         title = "Mittelpunkt der BBox"
-                        // andere Farbe: simplest ist ein anderes Drawable. Optional:
-                        // setIcon(ContextCompat.getDrawable(context, R.drawable.ic_marker_red))
                     }
                     map.overlays.add(truthMarker)
-                } else {
+                } else if (truthMarker?.position != p) {
                     truthMarker?.position = p
                 }
             }
@@ -102,10 +127,13 @@ fun OsmdroidMap(
             map.invalidate()
         },
         onRelease = {
-            mapViewRef?.onDetach()
-            mapViewRef = null
+            mapView?.onDetach()
+            mapView = null
             guessMarker = null
             truthMarker = null
+            lastBbox = null
+            autoFitEnabled = true
+            fitDoneForThisBbox = false
         }
     )
 }
