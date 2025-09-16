@@ -1,6 +1,7 @@
 // MainActivity.kt
 package com.example.geoguessr
 
+import android.os.Build
 import com.example.geoguessr.ui.navigation.Route
 import com.example.geoguessr.ui.screens.*
 import com.example.geoguessr.game.GameViewModel
@@ -8,25 +9,36 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import coil.ImageLoader
+import coil.compose.AsyncImage
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import coil.request.ImageRequest
 import com.example.geoguessr.game.GameMode
 import com.example.geoguessr.ui.theme.GeoGuessrTheme
-// Optional: nur nötig, wenn du im Lambda explizit typparametrierst
-// import com.example.geoguessr.game.RoundResult
 
 class MainActivity : AppCompatActivity() {
     //Beim Start werden Regionen + Namen + Hints in ViewModeltwo gesetzt.
     //Danach baut setContent { … } die komplette Compose-Oberfläche:
     //Zwischendrin reden die Screens mit den ViewModels:
     //GameViewModel (Punkte, Runden, Zeit).
-
 
     private val vm: GameViewModel by viewModels()
     private val viewModelTwo: ViewModeltwo by viewModels()
@@ -155,7 +167,7 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 )
                             } else {
-                                Text("🔄 Lade Panorama...")
+                                LoadingPanorama()
                             }
                         }
 
@@ -187,6 +199,42 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+}
+
+/** Lade-UI für den GameScreen: Weltkarte mittig, Text darüber. */
+@Composable
+private fun LoadingPanorama() {
+    val context = LocalContext.current
+
+    // ImageLoader MIT GIF-Unterstützung (einmal pro Composition erstellen)
+    val imageLoader = remember {
+        ImageLoader.Builder(context).components {
+            if (Build.VERSION.SDK_INT >= 28) {
+                add(ImageDecoderDecoder.Factory()) // modern (GIF/anim. WebP)
+            } else {
+                add(GifDecoder.Factory())          // Fallback für < 28
+            }
+        }.build()
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Lade Panorama...", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(12.dp))
+
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(R.drawable.skateboardloading) // dein animiertes GIF
+                    .build(),
+                imageLoader = imageLoader,               // ← WICHTIG
+                contentDescription = "Welt lädt",
+                modifier = Modifier.fillMaxWidth(0.5f)
+            )
         }
     }
 }

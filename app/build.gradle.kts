@@ -51,6 +51,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.appcompat)
     testImplementation(libs.junit)
+    implementation ("io.coil-kt:coil-compose:2.6.0")
+    implementation ("io.coil-kt:coil-gif:2.6.0")
     implementation ("org.osmdroid:osmdroid-android:6.1.16")
     implementation ("androidx.navigation:navigation-compose:2.7.7")
     implementation ("io.coil-kt:coil-compose:2.4.0")
