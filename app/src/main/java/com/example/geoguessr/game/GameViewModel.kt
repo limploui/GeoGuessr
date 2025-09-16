@@ -6,9 +6,13 @@ import androidx.lifecycle.AndroidViewModel
 
 enum class GameMode { NORMAL, HINT }
 
-data class RoundResult(val points: Int)
+data class RoundResult(
+    val points: Int,
+    val distanceKm: Double
+)
 
 class GameViewModel(app: Application) : AndroidViewModel(app) {
+
     var mode: GameMode = GameMode.NORMAL
         private set
 
@@ -24,23 +28,42 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     var lastRoundPoints: Int = 0
         private set
 
-    // ⏱️ neu: Sekunden pro Runde (z. B. 60)
+    // ⏱ Sekunden pro Runde
     var roundSeconds: Int = 60
         private set
 
-    fun setMode(m: GameMode) { mode = m }
-    fun setTotalRounds(n: Int) { totalRounds = n.coerceIn(1, 10) }
-    fun setRoundSeconds(sec: Int) { roundSeconds = sec.coerceIn(10, 600) } // 10s .. 10min
+    // 🔢 NEU: Distanzen & Rundensammlung
+    var lastRoundDistanceKm: Double = 0.0
+        private set
+
+    var totalDistanceKm: Double = 0.0
+        private set
+
+    private val _results = mutableListOf<RoundResult>()
+    val results: List<RoundResult> get() = _results
+
+    // WICHTIG: Um JVM-Namenskonflikte zu vermeiden (Property-Setter vs. Fun-Namen),
+    // keine Methoden "setXxx" benutzen, sondern andere Namen:
+    fun setGameMode(m: GameMode) { mode = m }
+    fun updateTotalRounds(n: Int) { totalRounds = n.coerceIn(1, 10) }
+    fun updateRoundSeconds(sec: Int) { roundSeconds = sec.coerceIn(10, 600) } // 10s..10min
 
     fun startGame() {
         currentRound = 1
         totalPoints = 0
         lastRoundPoints = 0
+        lastRoundDistanceKm = 0.0
+        totalDistanceKm = 0.0
+        _results.clear()
     }
 
-    fun finishRound(points: Int) {
-        lastRoundPoints = points
-        totalPoints += points
+    // ⬇️ NEU: nimmt RoundResult entgegen (Punkte + Distanz)
+    fun finishRound(summary: RoundResult) {
+        lastRoundPoints = summary.points
+        lastRoundDistanceKm = summary.distanceKm
+        totalPoints += summary.points
+        totalDistanceKm += summary.distanceKm
+        _results.add(summary)
         currentRound++
     }
 

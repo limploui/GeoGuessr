@@ -4,7 +4,6 @@ package com.example.geoguessr.util
 import kotlin.math.*
 
 object GeoUtils {
-
     /** bbox = [minLon, minLat, maxLon, maxLat] -> Mittelpunkt (lat, lon) */
     fun bboxCenter(bbox: DoubleArray): Pair<Double, Double> {
         val lon = (bbox[0] + bbox[2]) / 2.0
@@ -24,21 +23,27 @@ object GeoUtils {
     }
 
     /**
-     * Distanz -> Punkte mit quadratischem Abfall bis cutoff km.
-     * maxScore bleibt das absolute Maximum (z.B. 5000 wie im Normalmodus).
+     * Punkteberechnung abhängig von Distanz.
+     * - Standard: maxScore = 5000 (Normalmodus)
+     * - Hinweis-Modus: maxScore = 333 (wird mit Multiplikator hochskaliert)
      */
-    fun distanceScore(dKm: Double, maxScore: Int = 5000, cutoffKm: Double = 2000.0): Int {
-        if (dKm >= cutoffKm) return 0
-        val x = 1.0 - (dKm / cutoffKm)        // 1..0
-        return (maxScore * x * x).roundToInt().coerceIn(0, maxScore)
+    fun scoreFromDistanceKm(dKm: Double, maxScore: Int = 5000): Int {
+        val cutoff = 2000.0
+        if (dKm >= cutoff) return 0
+        val x = 1.0 - (dKm / cutoff) // 1..0
+        val s = maxScore * x * x
+        return s.roundToInt().coerceIn(0, maxScore)
     }
 
-    /**
-     * Hinweis-Abschlag (0..1]: 0 Tipps=1.0, 1=5/6≈0.833, 2=4/6≈0.667, 3=0.5, 4≈0.333, 5≈0.167.
-     * So bleibt das theoretische Maximum = maxScore (wie Normalmodus), wird aber mit Tipps reduziert.
-     */
-    fun hintPenalty(hintsUsed: Int): Double {
-        val h = hintsUsed.coerceIn(0, 5)
-        return (6 - h) / 6.0
+    /** Hinweis-Multiplikator */
+    fun hintMultiplier(hintsUsed: Int): Int {
+        return when (hintsUsed) {
+            0 -> 6
+            1 -> 5
+            2 -> 4
+            3 -> 3
+            4 -> 2
+            else -> 1
+        }
     }
 }

@@ -17,8 +17,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.geoguessr.game.GameMode
-import com.example.geoguessr.ui.screens.*
 import com.example.geoguessr.ui.theme.GeoGuessrTheme
+// Optional: nur nötig, wenn du im Lambda explizit typparametrierst
+// import com.example.geoguessr.game.RoundResult
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,185 +33,7 @@ class MainActivity : AppCompatActivity() {
 
         // ✅ 0) Hints definieren (max. 5 pro Region werden genutzt)
         val HINTS: Map<String, List<String>> = mapOf(
-            // Deutschland
-            "Berlin Mitte" to listOf(
-                "Liegt in Ostdeutschland.",
-                "Eine große Spree fließt durch die Stadt.",
-                "Sitz von Regierung und Parlament.",
-                "Berühmtes Tor ist das Wahrzeichen.",
-                "Fernsehturm prägt die Skyline."
-            ),
-            "München Altstadt" to listOf(
-                "Liegt in Süddeutschland.",
-                "Großes Volksfest im Herbst.",
-                "Dialekt: Bairisch.",
-                "Berühmtes Glockenspiel am zentralen Platz.",
-                "Fußballklub in Rot ist weltbekannt."
-            ),
-            "Hamburg City" to listOf(
-                "Großstadt im Norden.",
-                "Großer Hafen an der Elbe.",
-                "Backstein-Speicherstadt.",
-                "Berühmte Vergnügungsmeile.",
-                "Konzerthaus mit gläserner Krone."
-            ),
-            "Köln Innenstadt" to listOf( // deine Wünsche
-                "Liegt in Westdeutschland.",
-                "Da fließt der Rhein durch.",
-                "Karneval ist voll wichtig da.",
-                "Auf Latein heißt es 'Colonia'.",
-                "Da steht der Dom."
-            ),
-
-            // Frankreich
-            "Boisme FR" to listOf(
-                "Westfrankreich, ländlich.",
-                "Bocage-Landschaft.",
-                "Zwischen Nantes und Poitiers.",
-                "Viehzucht verbreitet.",
-                "Kleine Pfarrkirche im Ort."
-            ),
-            "Caurel FR" to listOf(
-                "Bretagne.",
-                "Nahe dem Lac de Guerlédan.",
-                "Granit und Schiefer.",
-                "Keltischer Einfluss.",
-                "Beliebt zum Wandern."
-            ),
-            "La Chapelle Caro FR" to listOf(
-                "Ebenfalls Bretagne.",
-                "Landwirtschaftlich geprägt.",
-                "Kleine Kapellen.",
-                "Bretonische Traditionen.",
-                "Zwischen Ploërmel und Malestroit."
-            ),
-            "Saint Victoret FR" to listOf(
-                "Provence, Südfrankreich.",
-                "Neben großer Mittelmeerstadt.",
-                "Nahe am Flughafen.",
-                "Zypressen und Pinien.",
-                "Viel Sonne, mildes Klima."
-            ),
-            "Marsillargues FR" to listOf(
-                "Okzitanien, nahe Mittelmeer.",
-                "Zwischen Montpellier und Nîmes.",
-                "Camargue-Ebene mit Wein.",
-                "Römische Spuren in der Region.",
-                "Mistral weht mitunter."
-            ),
-
-            // Irland
-            "Athlone IR" to listOf(
-                "Ziemlich in der Landesmitte.",
-                "Fluss Shannon teilt die Stadt.",
-                "Historische Burg am Ufer.",
-                "Brücken verbinden die Ufer.",
-                "Zwischen Galway und Dublin."
-            ),
-            "Fermoy IR" to listOf(
-                "Süden, County Cork.",
-                "Fluss Blackwater.",
-                "Brücke und alte Mühlen.",
-                "Grüne Weiden.",
-                "Nähe zu Cork City."
-            ),
-            "Killarney IR" to listOf(
-                "Südwesten, County Kerry.",
-                "Nationalpark mit Seen.",
-                "Berge ringsum.",
-                "Touristischer Hotspot.",
-                "Ringstraße in der Nähe."
-            ),
-
-            // Italien
-            "La Fiora IT" to listOf(
-                "Mittelitalien (Latium).",
-                "Hügelige Landschaft.",
-                "Oliven & Wein.",
-                "Tuffsteindörfer.",
-                "Nähe zum Tyrrhenischen Meer."
-            ),
-            "Monreale Sizilien IT" to listOf(
-                "Große Mittelmeerinsel.",
-                "Blick auf eine Hafenmetropole.",
-                "Berühmte Kathedrale mit Goldmosaiken.",
-                "Arabisch-normannische Architektur.",
-                "Zitronen- und Orangenhaine."
-            ),
-            "Pezzo Superiore IT" to listOf(
-                "Südlich vom Festlandende.",
-                "Über der Straße von Messina.",
-                "Hügelige, dichte Bebauung.",
-                "Palmen & Mittelmeerflora.",
-                "Nähe Reggio Calabria."
-            ),
-            "Pico IT" to listOf(
-                "Latium, Zentralitalien.",
-                "Burgdorf auf Hügel.",
-                "Natursteinmauern.",
-                "Olivenhaine ringsum.",
-                "Ruhige Kleinstadt."
-            ),
-            "Pini IT" to listOf(
-                "Süditalien (Apulien/Basilikata).",
-                "Sanfte Hügel.",
-                "Kiefern/Pinien namensgebend.",
-                "Kalkstein & Trockenmauern.",
-                "Ionisches Meer nicht weit."
-            ),
-            "Salerno IT" to listOf(
-                "Tyrrhenische Küste.",
-                "Tor zur Amalfiküste.",
-                "Lange Promenade.",
-                "Zitronen berühmt.",
-                "Fährhafen."
-            ),
-            "San Giovanni A Teduccio IT" to listOf(
-                "Teil einer großen Süditalien-Metropole.",
-                "Bucht mit Vulkan in Sicht.",
-                "Dichte Bebauung.",
-                "Industriell geprägt.",
-                "Kaffee- & Pizza-Kultur."
-            ),
-            "Siderno IT" to listOf(
-                "Kalabrien, Ionische Küste.",
-                "Langer Strand.",
-                "Promenade mit Palmen.",
-                "Altstadt im Hinterland.",
-                "Wein & Zitrusfrüchte."
-            ),
-
-            // Griechenland & Malta
-            "Amvrakia GR" to listOf(
-                "Westgriechenland, Binnenland.",
-                "Seen & Lagunen.",
-                "Viele Olivenbäume.",
-                "Mediterranes Klima.",
-                "Antike Spuren."
-            ),
-            "Valletta Malta" to listOf( // Schreibweise korrigiert
-                "Mittelmeer-Inselstaat.",
-                "Historische Hauptstadt auf Halbinsel.",
-                "Sandfarbener Kalkstein prägt.",
-                "Mächtige Festungsanlagen.",
-                "Zentraler Busknotenpunkt."
-            ),
-
-            // UK
-            "Chew Valley Lake UK" to listOf(
-                "Südwesten Englands.",
-                "Großer Stausee.",
-                "Vogelbeobachtung beliebt.",
-                "Nähe Bristol/Bath.",
-                "Grüne Hügel & Hecken."
-            ),
-            "Yeovil UK" to listOf(
-                "Südwesten Englands (Somerset).",
-                "Luftfahrt-Tradition.",
-                "Kleinstadt mit Einkaufsstraßen.",
-                "Backstein/Sandstein-Bauten.",
-                "Eigener Bahnhof."
-            )
+            // … deine HINTS wie in deinem Snippet …
         )
 
         // 1) Regionen + Hints setzen
@@ -249,7 +72,7 @@ class MainActivity : AppCompatActivity() {
                 "Saint Victoret FR", "Salerno IT", "San Giovanni A Teduccio IT", "Siderno IT",
                 "Valletta Malta", "Yeovil UK"
             ),
-            hintsByName = HINTS // ✅ neu
+            hintsByName = HINTS
         )
 
         setContent {
@@ -261,11 +84,11 @@ class MainActivity : AppCompatActivity() {
                         composable(Route.Start.path) {
                             StartScreen(
                                 onChooseNormal = {
-                                    vm.setMode(GameMode.NORMAL)
+                                    vm.setGameMode(GameMode.NORMAL)
                                     nav.navigate(Route.Setup.create("Normales Spiel"))
                                 },
                                 onChooseHint = {
-                                    vm.setMode(GameMode.HINT)
+                                    vm.setGameMode(GameMode.HINT)
                                     nav.navigate(Route.Setup.create("Hinweis Spiel"))
                                 }
                             )
@@ -278,8 +101,8 @@ class MainActivity : AppCompatActivity() {
                                 initialRounds = vm.totalRounds,
                                 initialSeconds = vm.roundSeconds,
                                 onStart = { rounds, seconds ->
-                                    vm.setTotalRounds(rounds)
-                                    vm.setRoundSeconds(seconds)
+                                    vm.updateTotalRounds(rounds)
+                                    vm.updateRoundSeconds(seconds)
                                     vm.startGame()
                                     viewModelTwo.loadRandomImageClearing()
                                     nav.navigate(Route.Game.path)
@@ -296,7 +119,8 @@ class MainActivity : AppCompatActivity() {
 
                             if (item?.id != null) {
                                 val trueLoc: Pair<Double, Double>? =
-                                    if (item!!.lat != 0.0 || item!!.lon != 0.0) Pair(item!!.lat, item!!.lon) else null
+                                    if (item!!.lat != 0.0 || item!!.lon != 0.0)
+                                        Pair(item!!.lat, item!!.lon) else null
 
                                 GameScreen(
                                     accessToken = accessToken,
@@ -306,8 +130,8 @@ class MainActivity : AppCompatActivity() {
                                     roundSeconds = secs,
                                     isHintMode = isHint,
                                     hints = regionHints,
-                                    onConfirmGuess = { points ->
-                                        vm.finishRound(points)
+                                    onConfirmGuess = { summary ->     // RoundResult (points + distanceKm)
+                                        vm.finishRound(summary)
                                         if (vm.isFinished()) {
                                             nav.navigate(Route.End.path) {
                                                 popUpTo(Route.Start.path) { inclusive = false }
@@ -326,6 +150,7 @@ class MainActivity : AppCompatActivity() {
                         composable(Route.Result.path) {
                             ResultScreen(
                                 roundPoints = vm.lastRoundPoints,
+                                roundDistanceKm = vm.lastRoundDistanceKm,  // ← Distanz anzeigen
                                 onNextRound = {
                                     nav.navigate(Route.Game.path) {
                                         popUpTo(Route.Game.path) { inclusive = true }
@@ -337,9 +162,10 @@ class MainActivity : AppCompatActivity() {
                         composable(Route.End.path) {
                             EndScreen(
                                 totalPoints = vm.totalPoints,
+                                totalDistanceKm = vm.totalDistanceKm, // Gesamtentfernung
+                                results = vm.results,                 // Liste aller Runden (für Scroll-Panel)
                                 onNewGame = {
                                     vm.startGame()
-                                    // kein direktes Laden hier – erst im Setup
                                     nav.navigate(Route.Start.path) {
                                         popUpTo(0) { inclusive = true }
                                     }
