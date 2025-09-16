@@ -4,6 +4,7 @@ package com.example.geoguessr.util
 import kotlin.math.*
 
 object GeoUtils {
+
     /** bbox = [minLon, minLat, maxLon, maxLat] -> Mittelpunkt (lat, lon) */
     fun bboxCenter(bbox: DoubleArray): Pair<Double, Double> {
         val lon = (bbox[0] + bbox[2]) / 2.0
@@ -23,33 +24,21 @@ object GeoUtils {
     }
 
     /**
-     * Punkte von Distanz (0–10.000). Quadratischer Falloff:
-     * 0 km ≈ 10.000 | 50 km ≈ 9.875 | 200 km ≈ 9.000 | 500 km ≈ 6.250 | 1.000 km ≈ 2.500 | >= 2.000 km → 0.
+     * Distanz -> Punkte mit quadratischem Abfall bis cutoff km.
+     * maxScore bleibt das absolute Maximum (z.B. 5000 wie im Normalmodus).
      */
-    fun scoreFromDistanceKm(dKm: Double): Int {
-        val max = 10000.0
-        val cutoff = 2000.0
-        if (dKm >= cutoff) return 0
-        val x = 1.0 - (dKm / cutoff)         // 1..0
-        val s = max * x * x                   // quadratisch
-        return s.roundToInt()
+    fun distanceScore(dKm: Double, maxScore: Int = 5000, cutoffKm: Double = 2000.0): Int {
+        if (dKm >= cutoffKm) return 0
+        val x = 1.0 - (dKm / cutoffKm)        // 1..0
+        return (maxScore * x * x).roundToInt().coerceIn(0, maxScore)
     }
 
-
-    // util/GeoUtils.kt (ergänzen)
-    fun hintMultiplier(hintsUsed: Int): Int {
-        // Vorgabe: 1→5, 2→4, 3→3, 4→2, 5→1
-        // Optional: 0 Tipps → 6 (maximaler Bonus). Falls du kein 0er-Bonus willst: gib hier 5 zurück.
-        return when (hintsUsed) {
-            0 -> 6   // ← optional; ändere auf 5, wenn dir 0 Tipps nicht extra belohnt werden sollen
-            1 -> 5
-            2 -> 4
-            3 -> 3
-            4 -> 2
-            else -> 1
-        }
+    /**
+     * Hinweis-Abschlag (0..1]: 0 Tipps=1.0, 1=5/6≈0.833, 2=4/6≈0.667, 3=0.5, 4≈0.333, 5≈0.167.
+     * So bleibt das theoretische Maximum = maxScore (wie Normalmodus), wird aber mit Tipps reduziert.
+     */
+    fun hintPenalty(hintsUsed: Int): Double {
+        val h = hintsUsed.coerceIn(0, 5)
+        return (6 - h) / 6.0
     }
-
-
-
 }

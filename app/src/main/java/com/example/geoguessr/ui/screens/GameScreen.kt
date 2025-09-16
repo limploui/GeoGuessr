@@ -2,11 +2,13 @@
 package com.example.geoguessr.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.example.geoguessr.data.MapillaryViewer
 import com.example.geoguessr.ui.map.OsmdroidMap
 import com.example.geoguessr.util.GeoUtils
@@ -42,7 +44,7 @@ fun GameScreen(
     // Falls Hinweis-Tab verschwindet, zurück zu Streetview
     LaunchedEffect(isHintMode) {
         if (!isHintMode && tab == 1) tab = 0
-        if (!isHintMode && tab == 2) tab = 1 // falls jemand noch auf 2 war
+        if (!isHintMode && tab == 2) tab = 1
     }
 
     // ⏱️ Countdown
@@ -53,54 +55,79 @@ fun GameScreen(
             timeLeft -= 1
         }
         if (timeLeft <= 0 && lastPoints == null) {
+            // Timeout: nur werten, wenn ein Tipp gesetzt wurde
             val center = bbox?.let { GeoUtils.bboxCenter(it) }
-            truth = center
             val target = trueLocation ?: center
-            val basePoints = if (guess != null && target != null) {
-                val dKm = GeoUtils.haversineKm(guess!!.first, guess!!.second, target.first, target.second)
+            if (guess != null && target != null) {
+                truth = center
+                val dKm = GeoUtils.haversineKm(
+                    guess!!.first, guess!!.second,
+                    target.first, target.second
+                )
                 lastDistanceKm = dKm
-                GeoUtils.scoreFromDistanceKm(dKm)
+                val base = GeoUtils.distanceScore(dKm, maxScore = 5000)
+                val penalty = if (isHintMode) GeoUtils.hintPenalty(hintsUsed) else 1.0
+                lastPoints = (base * penalty).toInt()
             } else {
+                truth = null
                 lastDistanceKm = null
-                0
+                lastPoints = 0
             }
-            val mult = if (isHintMode) GeoUtils.hintMultiplier(hintsUsed) else 1
-            lastPoints = (basePoints * mult).coerceAtMost(50000)
             timerRunning = false
         }
     }
 
     Column(Modifier.fillMaxSize()) {
 
-        // Tabs: Streetview, (Tipps), Karte
+        // Tabs: Streetview, (Tipps), Karte  — Tabs liegen bewusst ÜBER der Map
         val tabTitles = if (isHintMode)
             listOf("Streetview", "Tipps", "Karte")
         else
             listOf("Streetview", "Karte")
 
-        TabRow(selectedTabIndex = tab) {
+        TabRow(
+            selectedTabIndex = tab,
+            modifier = Modifier.zIndex(2f) // 🔼 Tabs immer über Map/AndroidView
+        ) {
             tabTitles.forEachIndexed { index, title ->
                 Tab(selected = tab == index, onClick = { tab = index }, text = { Text(title) })
             }
         }
 
-        // Kopfzeile
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+        // Kopfzeile: weißer, leicht transparenter Streifen über Map/Streetview
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .zIndex(1.5f), // 🔼 über der Map
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+            tonalElevation = 4.dp,
+            shadowElevation = 4.dp
         ) {
-            Text("Zeit: ${timeLeft}s")
-            when {
-                isHintMode -> {
-                    val mult = GeoUtils.hintMultiplier(hintsUsed)
-                    Text("Bonus x$mult")
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Zeit: ${timeLeft}s", style = MaterialTheme.typography.titleMedium)
+                when {
+                    isHintMode -> {
+                        val multStr = String.format("%.2f", GeoUtils.hintPenalty(hintsUsed))
+                        Text("Punkte ×$multStr", style = MaterialTheme.typography.titleMedium)
+                    }
+                    lastPoints != null -> Text("Punkte: $lastPoints", style = MaterialTheme.typography.titleMedium)
                 }
-                lastPoints != null -> Text("Punkte: $lastPoints")
             }
         }
 
-        // Inhalt
-        Box(Modifier.weight(1f)) {
+        // Inhalt — Map/Viewer liegen UNTEN
+        Box(
+            Modifier
+                .weight(1f)
+                .zIndex(0f) // 🔽 unter Tabs/Head
+        ) {
             when (tab) {
                 0 -> MapillaryViewer(
                     accessToken = accessToken,
@@ -111,7 +138,8 @@ fun GameScreen(
                     if (isHintMode) {
                         // Tipps
                         Column(
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
                             val shown = min(hintsUsed, hints.size)
@@ -158,36 +186,52 @@ fun GameScreen(
         if (lastPoints == null) {
             Button(
                 onClick = {
+                    // Nur werten, wenn ein Tipp existiert
+                    if (guess == null) return@Button
+
                     val center = bbox?.let { GeoUtils.bboxCenter(it) }
                     truth = center
                     val target = trueLocation ?: center
-                    val basePoints = if (guess != null && target != null) {
-                        val dKm = GeoUtils.haversineKm(guess!!.first, guess!!.second, target.first, target.second)
+
+                    val basePoints = if (target != null) {
+                        val dKm = GeoUtils.haversineKm(
+                            guess!!.first, guess!!.second,
+                            target.first, target.second
+                        )
                         lastDistanceKm = dKm
-                        GeoUtils.scoreFromDistanceKm(dKm)
+                        GeoUtils.distanceScore(dKm, maxScore = 5000)
                     } else {
                         lastDistanceKm = null
                         0
                     }
-                    val mult = if (isHintMode) GeoUtils.hintMultiplier(hintsUsed) else 1
-                    lastPoints = (basePoints * mult).coerceAtMost(50000)
+                    val penalty = if (isHintMode) GeoUtils.hintPenalty(hintsUsed) else 1.0
+                    lastPoints = (basePoints * penalty).toInt()
                     timerRunning = false
                 },
-                enabled = timeLeft > 0,
-                modifier = Modifier.fillMaxWidth().padding(16.dp)
+                // ✅ Bestätigen nur möglich, wenn ein Dot gesetzt wurde
+                enabled = timeLeft > 0 && guess != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .zIndex(1f) // 🔼 sicher über der Map
             ) { Text("Bestätigen") }
         } else {
-            Column(Modifier.fillMaxWidth().padding(16.dp)) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .zIndex(1f) // 🔼 sicher über der Map
+            ) {
                 lastDistanceKm?.let { Text("Distanz: ${"%.1f".format(it)} km") }
                 if (isHintMode) {
-                    val mult = GeoUtils.hintMultiplier(hintsUsed)
-                    Text("Bonus: x$mult")
+                    val multStr = String.format("%.2f", GeoUtils.hintPenalty(hintsUsed))
+                    Text("Multiplikator: ×$multStr")
                 }
                 Spacer(Modifier.height(8.dp))
                 Button(
                     onClick = {
                         onConfirmGuess(lastPoints!!)
-                        // Reset
+                        // Reset für die nächste Runde
                         guess = null
                         truth = null
                         lastPoints = null

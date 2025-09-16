@@ -8,6 +8,7 @@ import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.events.MapListener
 import org.osmdroid.events.ScrollEvent
 import org.osmdroid.events.ZoomEvent
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -28,7 +29,7 @@ fun OsmdroidMap(
 
     var lastBbox by remember { mutableStateOf<DoubleArray?>(null) }
 
-    // Auto-Fit nur solange aktiv, bis der Nutzer IRGENDEINE Geste gemacht hat
+    // Auto-Fit nur bis zur ersten User-Geste
     var autoFitEnabled by remember { mutableStateOf(true) }
     // Ein Fit pro BBox-Wechsel
     var fitDoneForThisBbox by remember { mutableStateOf(false) }
@@ -37,15 +38,31 @@ fun OsmdroidMap(
         modifier = modifier,
         factory = { ctx ->
             MapView(ctx).apply {
+                // Grund-Setup
+                setTileSource(TileSourceFactory.MAPNIK)
                 setMultiTouchControls(true)
                 isTilesScaledToDpi = true
+                // (Optional) Zoom-Grenzen, falls gewünscht:
+                // setMinZoomLevel(2.0)
+                // setMaxZoomLevel(19.0)
+
+                // Touch-Weitergabe: während der Geste Eltern nicht intercepten, danach wieder erlauben
+                setOnTouchListener { v, ev ->
+                    val parent = v.parent
+                    when (ev.actionMasked) {
+                        android.view.MotionEvent.ACTION_DOWN -> parent?.requestDisallowInterceptTouchEvent(true)
+                        android.view.MotionEvent.ACTION_UP,
+                        android.view.MotionEvent.ACTION_CANCEL -> parent?.requestDisallowInterceptTouchEvent(false)
+                    }
+                    false // Map verarbeitet die Geste normal
+                }
 
                 // Taps → Guess setzen UND Auto-Fit deaktivieren
                 val tapReceiver = object : MapEventsReceiver {
                     override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
-                        autoFitEnabled = false           // ✅ Tap zählt als User-Interaktion
+                        autoFitEnabled = false
                         p?.let { onTap(it.latitude, it.longitude) }
-                        return true
+                        return true // Event verbraucht
                     }
                     override fun longPressHelper(p: GeoPoint?): Boolean = false
                 }
@@ -63,6 +80,8 @@ fun OsmdroidMap(
                     }
                 })
 
+                // Lifecycle-Helfer
+                onResume()
                 mapView = this
             }
         },
@@ -75,24 +94,22 @@ fun OsmdroidMap(
             }
             if (bboxChanged && bbox != null) {
                 lastBbox = bbox.copyOf()
-                fitDoneForThisBbox = false      // neuer Bereich → wieder einmalig fitten
-                autoFitEnabled = true           // Fit darf einmal laufen
+                fitDoneForThisBbox = false    // neuer Bereich → einmalig fitten
+                autoFitEnabled = true         // Fit darf laufen, bis User interagiert
             }
 
-            // 2) Auto-Fit genau einmal pro BBox (und nur solange kein User interagiert hat)
+            // 2) Auto-Fit: genau einmal pro BBox und nur solange keine User-Geste
             if (bbox != null && autoFitEnabled && !fitDoneForThisBbox) {
                 val bb = BoundingBox(
                     /*north*/ bbox[3], /*east*/ bbox[2],
                     /*south*/ bbox[1], /*west*/ bbox[0]
                 )
+                // animate=false: keine „Zuckler“, zuverlässiger in Compose
                 map.zoomToBoundingBox(bb, false)
                 fitDoneForThisBbox = true
-                // Wichtig: nicht sofort wieder deaktivieren — wir lassen autoFitEnabled aktiv,
-                // falls Compose direkt danach noch einmal update aufruft.
-                // Es wird aber später durch Tap/Scroll/Zoom abgeschaltet.
             }
 
-            // 3) Guess-Marker pflegen
+            // 3) Guess-Marker pflegen/entfernen
             if (guessPoint != null) {
                 val (lat, lon) = guessPoint
                 val p = GeoPoint(lat, lon)
@@ -106,9 +123,15 @@ fun OsmdroidMap(
                 } else if (guessMarker?.position != p) {
                     guessMarker?.position = p
                 }
+            } else {
+                // guess ist null -> Marker entfernen, wenn vorhanden
+                guessMarker?.let { m ->
+                    map.overlays.remove(m)
+                    guessMarker = null
+                }
             }
 
-            // 4) Truth-Marker pflegen
+            // 4) Truth-Marker pflegen/entfernen
             if (truthPoint != null) {
                 val (lat, lon) = truthPoint
                 val p = GeoPoint(lat, lon)
@@ -122,11 +145,17 @@ fun OsmdroidMap(
                 } else if (truthMarker?.position != p) {
                     truthMarker?.position = p
                 }
+            } else {
+                truthMarker?.let { m ->
+                    map.overlays.remove(m)
+                    truthMarker = null
+                }
             }
 
             map.invalidate()
         },
         onRelease = {
+            mapView?.onPause()
             mapView?.onDetach()
             mapView = null
             guessMarker = null
