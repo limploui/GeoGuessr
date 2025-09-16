@@ -14,11 +14,13 @@ import androidx.compose.ui.unit.dp
 import com.example.geoguessr.R
 
 @Composable
-
 fun StartScreen(
     onChooseNormal: () -> Unit,
     onChooseHint: () -> Unit,
 ) {
+    // Wie viel höher das Bild sitzen soll (anpassbar)
+    val bottomOffset = 8.dp   // z.B. 24dp; bei Bedarf 16–32dp testen
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -36,12 +38,17 @@ fun StartScreen(
         Spacer(Modifier.height(16.dp))
         ModeCard("Hinweis Spiel", onChooseHint)
 
-        Spacer(Modifier.height(32.dp)) // Abstand nach unten
+        // Schiebt das Bild nach unten
+        Spacer(Modifier.weight(1f))
+
         Image(
             painter = painterResource(R.drawable.welt),
             contentDescription = "welt.png",
             modifier = Modifier.fillMaxWidth(0.7f)
         )
+
+        // NEU: kleiner Spacer unter dem Bild → Bild sitzt etwas höher
+        Spacer(Modifier.height(bottomOffset))
     }
 }
 

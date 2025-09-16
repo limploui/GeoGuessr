@@ -15,6 +15,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.geoguessr.R
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.layout.ContentScale
+
+
 
 @Composable
 fun SetupScreen(
@@ -25,127 +30,150 @@ fun SetupScreen(
 ) {
     var rounds by remember { mutableStateOf(initialRounds) }
     var seconds by remember { mutableStateOf(initialSeconds) }
-    var noTimeLimit by remember { mutableStateOf(false) }   // 🆕 Toggle für Zeitlimit
+    var noTimeLimit by remember { mutableStateOf(false) }   // Toggle für Zeitlimit
 
-    Column(
+    // Tuning-Parameter für die Bildbox unten
+    val IMAGE_WIDTH_FRACTION = 0.7f   // wie breit das Bild unten relativ zur Screenbreite sein soll
+    val ASPECT_RATIO = 1.6f           // Breite / Höhe des Bildes (z.B. 16:10 ≈ 1.6; 16:9 wäre ≈ 1.78)
+    val MIN_IMAGE_HEIGHT = 240.dp     // untere Klammer
+    val MAX_IMAGE_HEIGHT = 360.dp     // obere Klammer
+
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(24.dp)
     ) {
-        // Überschrift wie im Startscreen
-        Text(
-            modeTitle,
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(top = 32.dp, bottom = 48.dp),
-            textAlign = TextAlign.Center
-        )
+        // Höhe der Bildbox so bestimmen, dass sie zur gewünschten Bildbreite passt:
+        // height = (width * fraction) / aspect
+        val desiredWidth = maxWidth * IMAGE_WIDTH_FRACTION
+        val desiredHeight = desiredWidth / ASPECT_RATIO
+        val bottomHeight = desiredHeight.coerceIn(MIN_IMAGE_HEIGHT, MAX_IMAGE_HEIGHT)
 
-        // Runden
-        SettingCard(
-            title = "Runden",
-            valueText = rounds.toString(),
-            onMinus = { rounds = (rounds - 1).coerceAtLeast(1) },
-            onPlus = { rounds = (rounds + 1).coerceAtMost(10) }
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // Zeit (mit rotem X-Button neben dem Wort "Zeit")
-        Card(
+        // OBERER BEREICH: scrollt; bekommt unten Padding, damit er nicht in die Bildbox ragt
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-            elevation = CardDefaults.cardElevation(),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFFFFCC80), // helles Orange
-                contentColor = Color.Black
-            ),
-            shape = RoundedCornerShape(16.dp)
+                .fillMaxSize()
+                .padding(bottom = bottomHeight)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Titel + roter X-Button direkt daneben
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        "Zeit",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    // 🆕 roter X-Button (Zeitlimit an/aus)
-                    FilledTonalButton(
-                        onClick = { noTimeLimit = !noTimeLimit },
-                        modifier = Modifier.size(40.dp),
-                        contentPadding = PaddingValues(0.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = if (noTimeLimit) Color.Gray else Color.Red,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text("x", style = MaterialTheme.typography.titleMedium)
-                    }
-                }
-
-                // Steuerleiste rechts (Minus / Wert / Plus)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    SquareActionButton(
-                        text = "−",
-                        onClick = { seconds = (seconds - 10).coerceAtLeast(10) },
-                        enabled = !noTimeLimit
-                    )
-                    ValueBox(valueText = if (noTimeLimit) "∞" else "${seconds}s")
-                    SquareActionButton(
-                        text = "+",
-                        onClick = { seconds = (seconds + 10).coerceAtMost(600) },
-                        enabled = !noTimeLimit
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // Bild wie im Startscreen (70% Breite) + Button direkt darauf (zentriert)
-        Box(
-            modifier = Modifier.fillMaxWidth(0.7f),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(R.drawable.welt),
-                contentDescription = "Weltkarte",
-                modifier = Modifier.fillMaxWidth()
+            Text(
+                modeTitle,
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(top = 32.dp, bottom = 48.dp),
+                textAlign = TextAlign.Center
             )
 
-            // Weißer Button auf der Karte
-            ElevatedButton(
-                onClick = { onStart(rounds, if (noTimeLimit) Int.MAX_VALUE else seconds) },
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.elevatedButtonColors(
-                    containerColor = Color.White,
+            // Runden
+            SettingCard(
+                title = "Runden",
+                valueText = rounds.toString(),
+                onMinus = { rounds = (rounds - 1).coerceAtLeast(1) },
+                onPlus  = { rounds = (rounds + 1).coerceAtMost(10) }
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Zeit (mit rotem X-Button)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                elevation = CardDefaults.cardElevation(),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFFFCC80),
                     contentColor = Color.Black
                 ),
-                elevation = ButtonDefaults.buttonElevation(
-                    defaultElevation = 4.dp,
-                    pressedElevation = 8.dp
-                )
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Los geht’s", style = MaterialTheme.typography.titleMedium)
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("Zeit", style = MaterialTheme.typography.titleLarge)
+                        FilledTonalButton(
+                            onClick = { noTimeLimit = !noTimeLimit },
+                            modifier = Modifier.size(40.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = if (noTimeLimit) Color.Gray else Color.Red,
+                                contentColor = Color.White
+                            )
+                        ) { Text("x", style = MaterialTheme.typography.titleMedium) }
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        SquareActionButton(
+                            text = "−",
+                            onClick = { seconds = (seconds - 10).coerceAtLeast(10) },
+                            enabled = !noTimeLimit
+                        )
+                        ValueBox(valueText = if (noTimeLimit) "∞" else "${seconds}s")
+                        SquareActionButton(
+                            text = "+",
+                            onClick = { seconds = (seconds + 10).coerceAtMost(600) },
+                            enabled = !noTimeLimit
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+            // (Bild ist unten fixiert – hier kein Bild mehr)
+        }
+
+        // UNTERER BEREICH: Bild fix am unteren Rand, Höhe wie berechnet
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(bottomHeight),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(IMAGE_WIDTH_FRACTION)
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.welt),
+                    contentDescription = "Weltkarte",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                ElevatedButton(
+                    onClick = { onStart(rounds, if (noTimeLimit) Int.MAX_VALUE else seconds) },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.elevatedButtonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 4.dp,
+                        pressedElevation = 8.dp
+                    )
+                ) {
+                    Text("Los geht’s", style = MaterialTheme.typography.titleMedium)
+                }
             }
         }
     }
 }
+
+
 
 @Composable
 private fun SettingCard(
