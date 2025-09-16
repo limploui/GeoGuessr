@@ -62,8 +62,13 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun updateTotalRounds(n: Int) { totalRounds = n.coerceIn(1, 10) }
 
     //updateRoundSeconds(sec): setzt die Zeit, aber begrenzt auf 10–600s.
-    fun updateRoundSeconds(sec: Int) { roundSeconds = sec.coerceIn(10, 600) } // 10s..10min
-
+    fun updateRoundSeconds(sec: Int) {
+        roundSeconds = if (sec == Int.MAX_VALUE) {
+            Int.MAX_VALUE           // ∞ zulassen
+        } else {
+            sec.coerceIn(10, 600)   // normales Limit
+        }
+    }
     //startGame(): Spiel wird „resettet“:
     fun startGame() {
         currentRound = 1

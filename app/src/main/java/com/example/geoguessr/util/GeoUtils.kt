@@ -36,14 +36,12 @@ object GeoUtils {
     }
 
     /** Hinweis-Multiplikator */
-    fun hintMultiplier(hintsUsed: Int): Int {
-        return when (hintsUsed) {
-            0 -> 6
-            1 -> 5
-            2 -> 4
-            3 -> 3
-            4 -> 2
-            else -> 1
-        }
+    fun hintMultiplier(hintsUsed: Int): Double = when (hintsUsed) {
+        0 -> 1.00
+        1 -> 0.85
+        2 -> 0.70
+        3 -> 0.55
+        4 -> 0.40
+        else -> 0.30
     }
 }

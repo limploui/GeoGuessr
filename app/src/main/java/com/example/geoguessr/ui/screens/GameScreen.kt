@@ -15,6 +15,7 @@ import com.example.geoguessr.util.GeoUtils
 import com.example.geoguessr.game.RoundResult
 import kotlinx.coroutines.delay
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 @Composable
 fun GameScreen(
@@ -68,8 +69,8 @@ fun GameScreen(
                 val dKm = GeoUtils.haversineKm(guess!!.first, guess!!.second, target.first, target.second)
                 lastDistanceKm = dKm
                 val basePoints = GeoUtils.scoreFromDistanceKm(dKm)
-                val mult = if (isHintMode) GeoUtils.hintMultiplier(hintsUsed) else 1
-                lastPoints = (basePoints * mult).coerceAtMost(50000)
+                val mult = if (isHintMode) GeoUtils.hintMultiplier(hintsUsed) else 1.0
+                lastPoints = (basePoints * mult).roundToInt().coerceAtMost(5000)
             } else {
                 truth = null
                 lastDistanceKm = null
@@ -192,9 +193,9 @@ fun GameScreen(
                             guess!!.first, guess!!.second,
                             target.first, target.second
                         )
-                        val base = GeoUtils.scoreFromDistanceKm(dKm)
-                        val mult = if (isHintMode) GeoUtils.hintMultiplier(hintsUsed) else 1
-                        ((base * mult).coerceAtMost(50000)) to dKm
+                        val base = GeoUtils.scoreFromDistanceKm(dKm)             // 0..5000
+                        val mult = if (isHintMode) GeoUtils.hintMultiplier(hintsUsed) else 1.0
+                        ((base * mult).roundToInt().coerceAtMost(5000)) to dKm
                     } else 0 to null
 
                     lastDistanceKm = distKm
