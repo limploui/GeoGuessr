@@ -13,6 +13,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
+// Zeigt ein Mapillary Bild oder Pano in einem WebView an
+// Das ist das Fenster für Streetview-ähnliche Bilder
 fun MapillaryViewer(
     accessToken: String,
     imageId: String,
@@ -25,6 +27,7 @@ fun MapillaryViewer(
 
     AndroidView(
         modifier = modifier,
+        //Hier wird der WebView gebaut, eingerichtet und es wird eine HTML-Datei geladen.
         factory = { context ->
             WebView(context).apply {
                 settings.javaScriptEnabled = true
@@ -42,6 +45,9 @@ fun MapillaryViewer(
                 settings.allowUniversalAccessFromFileURLs = true
                 settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW // wichtig
 
+                // WebChromeClient: hier wird onConsoleMessage überschrieben,
+                // damit man Logs aus dem Browser-Console im Android-Logcat sieht (Log.i("MJS", ...)).
+
                 webChromeClient = object : WebChromeClient() {
                     override fun onConsoleMessage(message: android.webkit.ConsoleMessage): Boolean {
                         Log.i("MJS", "[console] ${message.message()} @${message.sourceId()}:${message.lineNumber()}")
@@ -49,6 +55,7 @@ fun MapillaryViewer(
                     }
                 }
 
+                //WebViewClient: onPageFinished feuert, wenn die HTML fertig geladen ist.
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String) {
                         super.onPageFinished(view, url)
@@ -69,6 +76,11 @@ fun MapillaryViewer(
                 loadUrl("file:///android_asset/mly_v2.html")
             }
         },
+        //Dieser Block läuft jedes Mal, wenn Compose neu rendert.
+        //Hier wird geprüft:
+        //„Seite ist geladen und init schon gemacht und die imageId ist NEU?“
+        //Wenn ja → window.setImage(imageId) per JS.
+        //Danach wird lastImageId = imageId gespeichert, damit du es nicht nochmal machst.
         update = { webView ->
             // Wenn Seite geladen & init bereits passiert ist, aber imageId sich geändert hat → setImage
             if (pageLoaded && inited && lastImageId != imageId) {
@@ -78,6 +90,7 @@ fun MapillaryViewer(
                 lastImageId = imageId
             }
         },
+        //Wird aufgerufen, wenn Compose diesen Composable „wegwirft“
         onRelease = {
             // Cleanup
             inited = false

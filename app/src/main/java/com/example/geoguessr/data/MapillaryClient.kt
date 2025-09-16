@@ -17,14 +17,16 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 class MapillaryClient(context: Context) {
-
+    // Hier werden Auth, Logging, Fehlerbehandlung und Feld-Auswahl gekapselt, ähnlich wie Backend.
     // Dein Client-Token (kein OAuth nötig)
     private val clientToken: String = "MLY|25128393533414969|53cc9f3a61d67b7e6648f080f4cdff1d"
 
+    // Logging (nur für Debug, nicht in Produktion)
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
+    // Fügt jedem Request den Authorization-Header hinzu
     private val authInterceptor = Interceptor { chain ->
         val req = chain.request().newBuilder()
             .addHeader("Authorization", "OAuth $clientToken")
@@ -33,6 +35,8 @@ class MapillaryClient(context: Context) {
         chain.proceed(req)
     }
 
+    // HTTP-Client mit Interceptors
+    // Timeouts & Retry: stabileres Netzverhalten.
     private val client = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .addInterceptor(logging)
@@ -50,6 +54,7 @@ class MapillaryClient(context: Context) {
         .create(MapillaryApi::class.java)
 
     // --- DTO fürs UI ---
+    // Vereinfachte Bilddaten fürs UI
     data class ImageData(
         val id: String,
         val lon: Double,
@@ -61,6 +66,9 @@ class MapillaryClient(context: Context) {
 
     /**
      * Zufälliges Panorama (strict).
+     * Gibt null zurück, wenn kein Panorama gefunden wurde.
+     * Bbox-Format: "minLon,minLat,maxLon,maxLat" (ohne Leerzeichen)
+     * Viel log für das Debugging.Haben wir Panos, wenn neinn, warum nicht?
      */
     suspend fun getRandomPano(bbox: String): ImageData? =
         withContext(Dispatchers.IO) {
@@ -96,6 +104,8 @@ class MapillaryClient(context: Context) {
 
     /**
      * Allgemeines Bild – kann Panoramen oder Non-Panos zurückgeben.
+     *
+     *
      */
     suspend fun getRandomImage(bbox: String, onlyPanorama: Boolean? = null): ImageData? =
         withContext(Dispatchers.IO) {
@@ -136,6 +146,7 @@ class MapillaryClient(context: Context) {
         }
 
     // Haversine-Distanz (km)
+    //Für das Spiel brauchen wir die Entfernung zwischen zwei Punkten auf der Erde.
     private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val R = 6371.0
         val dLat = Math.toRadians(lat2 - lat1)
@@ -147,7 +158,8 @@ class MapillaryClient(context: Context) {
     }
 
 
-
+    // Nur die URL eines zufälligen Bildes in der Bbox (für Widget)
+    // Gibt null zurück, wenn kein Bild gefunden wurde oder ein Fehler auftritt
     suspend fun getRandomImageUrl(bbox: String): String? = withContext(Dispatchers.IO) {
         return@withContext try {
             val cleanBbox = bbox.replace(" ", "")

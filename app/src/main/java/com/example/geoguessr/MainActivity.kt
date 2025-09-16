@@ -22,6 +22,11 @@ import com.example.geoguessr.ui.theme.GeoGuessrTheme
 // import com.example.geoguessr.game.RoundResult
 
 class MainActivity : AppCompatActivity() {
+    //Beim Start werden Regionen + Namen + Hints in ViewModeltwo gesetzt.
+    //Danach baut setContent { … } die komplette Compose-Oberfläche:
+    //Zwischendrin reden die Screens mit den ViewModels:
+    //GameViewModel (Punkte, Runden, Zeit).
+
 
     private val vm: GameViewModel by viewModels()
     private val viewModelTwo: ViewModeltwo by viewModels()
@@ -37,6 +42,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         // 1) Regionen + Hints setzen
+        // //ViewModeltwo (Bild holen, BBox, Hints).
         viewModelTwo.setRegions(
             bboxes = listOf(
                 doubleArrayOf(13.4030, 52.5190, 13.4068, 52.5210), // Berlin Mitte
@@ -79,8 +85,14 @@ class MainActivity : AppCompatActivity() {
             GeoGuessrTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     val nav = rememberNavController()
+                    //Ein NavHost verwaltet die Routen/Seiten.
                     NavHost(navController = nav, startDestination = Route.Start.path) {
 
+                        //StartScreen: Modus wählen.
+                        //SetupScreen: Runden & Zeit wählen → Spiel starten → erstes Bild laden.
+                        //GameScreen: Bild ansehen, Tipp setzen, bestätigen → Punkte berechnen.
+                        //ResultScreen: Runden-Ergebnis.
+                        //EndScreen: Gesamtübersicht & „Neues Spiel“.
                         composable(Route.Start.path) {
                             StartScreen(
                                 onChooseNormal = {

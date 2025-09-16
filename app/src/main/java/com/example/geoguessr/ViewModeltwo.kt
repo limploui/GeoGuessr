@@ -10,9 +10,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
+//ViewModeltwo kümmert sich darum, aus welchen Regionen Bilder kommen, welche Hinweise
+// es dazu gibt und welches konkrete Bild als Nächstes geladen wird.
+//Es achtet darauf, nicht zweimal hintereinander dieselbe Region oder
+// dasselbe Bild zu nehmen und vergrößert die BBox, wenn in einer Gegend keine Bilder gefunden werden.
+// Außerdem schützt es vor Race Conditions (späte Netzantworten).
 class ViewModeltwo(application: Application) : AndroidViewModel(application) {
 
-    // --- Hints ---
+    // --- Hinweise ---
     private var regionHints: Map<String, List<String>> = emptyMap()
     private val _currentHints = MutableLiveData<List<String>>(emptyList())
     val currentHints: LiveData<List<String>> = _currentHints
@@ -31,7 +36,8 @@ class ViewModeltwo(application: Application) : AndroidViewModel(application) {
     private var regions: List<DoubleArray> = emptyList() // [minLon, minLat, maxLon, maxLat]
     private var regionNames: List<String> = emptyList()
 
-    // Defaults
+    // Defaults, also wenn setRegions() nicht aufgerufen wird
+    // (Koordinaten: minLon, minLat, maxLon, maxLat)
     private val defaultRegions = listOf(
         doubleArrayOf(13.4030, 52.5190, 13.4068, 52.5210), // Berlin Mitte
         doubleArrayOf(11.5675, 48.1355, 11.5795, 48.1430), // München Altstadt
@@ -58,6 +64,7 @@ class ViewModeltwo(application: Application) : AndroidViewModel(application) {
         doubleArrayOf(14.4220, 35.8064, 14.6046, 35.9900),     // Valetta Malta
         doubleArrayOf(-2.64105, 50.93334, -2.61560, 50.94210)  // Yeovil England
     )
+    // Namen der Regionen (für Hinweise)
     private val defaultNames = listOf(
         "Berlin Mitte", "München Altstadt", "Hamburg City", "Köln Innenstadt",
         "Amvrakia GR", "Athlone IR", "Boisme FR", "Caurel FR", "Chew Valley Lake UK",
@@ -67,6 +74,8 @@ class ViewModeltwo(application: Application) : AndroidViewModel(application) {
         "Valetta Malta", "Yeovil UK"
     )
 
+    //_image/image, _currentBbox/currentBbox, _currentRegionName/currentRegionName:
+    // LiveData, die der UI sagen, was angezeigt werden soll.
     private val _image = MutableLiveData<MapillaryClient.ImageData?>()
     val image: LiveData<MapillaryClient.ImageData?> = _image
 
@@ -76,7 +85,8 @@ class ViewModeltwo(application: Application) : AndroidViewModel(application) {
     private val _currentRegionName = MutableLiveData<String?>()
     val currentRegionName: LiveData<String?> = _currentRegionName
 
-    /** Regionen + optionale Hinweise setzen */
+    /** Regionen + optionale Hinweise setzen
+     * Setzt, welche Regionen/Namen/Hints verwendet werden.*/
     fun setRegions(
         bboxes: List<DoubleArray>,
         names: List<String>? = null,

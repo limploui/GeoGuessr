@@ -35,11 +35,14 @@ fun GameScreen(
     var lastPoints by rememberSaveable { mutableStateOf<Int?>(null) }
     var lastDistanceKm by rememberSaveable { mutableStateOf<Double?>(null) }
 
+    // ∞-Modus?
     val unlimitedTime = roundSeconds == Int.MAX_VALUE
 
-    // ⏱️ Timer
-    var timeLeft by remember(imageId) { mutableStateOf(if (unlimitedTime) Int.MAX_VALUE else roundSeconds) }
-    var timerRunning by remember(imageId) { mutableStateOf(!unlimitedTime) }
+    // ⏱️ Timer-State (bei ∞ kein Countdown)
+    var timeLeft by remember(imageId, unlimitedTime) {
+        mutableStateOf(if (unlimitedTime) Int.MAX_VALUE else roundSeconds)
+    }
+    var timerRunning by remember(imageId, unlimitedTime) { mutableStateOf(!unlimitedTime) }
 
     // 💡 Hints (0..5)
     var hintsUsed by rememberSaveable(imageId) { mutableStateOf(0) }
@@ -93,8 +96,7 @@ fun GameScreen(
             }
         }
 
-        // Kopfzeile: nur Zeit anzeigen, wenn Zeitlimit aktiv ist
-        // Kopfzeile im GameScreen
+        // Kopfzeile (zeigt ∞ bei ausgeschalteter Zeit)
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -111,14 +113,12 @@ fun GameScreen(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                if (unlimitedTime) {
-                    Text("Zeit: ∞", style = MaterialTheme.typography.titleMedium)  // 🆕 statt leer
-                } else {
-                    Text("Zeit: ${timeLeft}s", style = MaterialTheme.typography.titleMedium)
-                }
+                Text(
+                    text = if (unlimitedTime) "Zeit: ∞" else "Zeit: ${timeLeft}s",
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
         }
-
 
         // Inhalt
         Box(
