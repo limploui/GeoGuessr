@@ -78,6 +78,8 @@
       ready: false,
       queue: [],
       firstId: null,
+      // ⬇️ NEU: Wird bei jedem Bildwechsel gesetzt und beim ersten sichtbaren Frame wieder gelöscht
+      firstFramePending: false,
     };
 
     // Hilfsfunktion: moveTo mit sauberem Logging
@@ -90,6 +92,9 @@
         console.warn("[MJS] tryMove ohne viewer:", id, "reason:", reason);
         return;
       }
+      // ⬇️ NEU: Ab jetzt warten wir auf den ersten Frame
+      window.MLY.firstFramePending = true;
+
       window.MLY.viewer
         .moveTo(id)
         .then(() => console.log("[MJS] moveTo OK:", id, "reason:", reason))
@@ -138,6 +143,9 @@
         container: 'mly'
       });
       window.MLY.viewer = v;
+      // ⬇️ NEU: globaler Handle, damit Android-Seite hooks injizieren kann
+      window._viewer = v;
+
       console.log("[MJS] Viewer created");
 
       // Fired wenn Viewer komplett initialisiert ist
@@ -161,6 +169,14 @@
       v.on('image', e => {
         const id = e && e.image && e.image.id;
         console.log("[MJS] Bild geladen:", id);
+
+        // ⬇️ NEU: Erstes sichtbares Frame nach einem moveTo → Android benachrichtigen (einmalig)
+        if (window.MLY.firstFramePending) {
+          window.MLY.firstFramePending = false;
+          if (window.AndroidBridge && typeof AndroidBridge.onFirstImageRendered === 'function') {
+            try { AndroidBridge.onFirstImageRendered(); } catch(_) {}
+          }
+        }
       });
 
       // Watchdog: Falls 'load' wider Erwarten nicht kommt
@@ -189,5 +205,6 @@
       tryMove(imageId, "setImage");
     };
 </script>
+
 </body>
 </html>
