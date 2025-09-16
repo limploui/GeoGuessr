@@ -12,7 +12,7 @@ import androidx.compose.ui.zIndex
 import com.example.geoguessr.data.MapillaryViewer
 import com.example.geoguessr.ui.map.OsmdroidMap
 import com.example.geoguessr.util.GeoUtils
-import com.example.geoguessr.game.RoundResult   // ⬅️ neu
+import com.example.geoguessr.game.RoundResult
 import kotlinx.coroutines.delay
 import kotlin.math.min
 
@@ -25,7 +25,7 @@ fun GameScreen(
     roundSeconds: Int = 60,
     isHintMode: Boolean = false,
     hints: List<String> = emptyList(),
-    onConfirmGuess: (RoundResult) -> Unit  // ⬅️ neu: RoundResult statt Int
+    onConfirmGuess: (RoundResult) -> Unit
 ) {
     // Tabs: 0 Streetview, 1 Tipps (nur im Hint-Mode), 2 Karte
     var tab by remember { mutableStateOf(0) }
@@ -35,9 +35,11 @@ fun GameScreen(
     var lastPoints by rememberSaveable { mutableStateOf<Int?>(null) }
     var lastDistanceKm by rememberSaveable { mutableStateOf<Double?>(null) }
 
+    val unlimitedTime = roundSeconds == Int.MAX_VALUE
+
     // ⏱️ Timer
-    var timeLeft by remember(imageId) { mutableStateOf(roundSeconds) }
-    var timerRunning by remember(imageId) { mutableStateOf(true) }
+    var timeLeft by remember(imageId) { mutableStateOf(if (unlimitedTime) Int.MAX_VALUE else roundSeconds) }
+    var timerRunning by remember(imageId) { mutableStateOf(!unlimitedTime) }
 
     // 💡 Hints (0..5)
     var hintsUsed by rememberSaveable(imageId) { mutableStateOf(0) }
@@ -48,9 +50,9 @@ fun GameScreen(
         if (!isHintMode && tab == 2) tab = 1
     }
 
-    // ⏱️ Countdown → bei Timeout nur werten, wenn ein Tipp gesetzt wurde
-    LaunchedEffect(imageId, timerRunning, lastPoints) {
-        if (!timerRunning || lastPoints != null) return@LaunchedEffect
+    // ⏱️ Countdown → nur wenn Zeitlimit aktiv ist
+    LaunchedEffect(imageId, timerRunning, lastPoints, unlimitedTime) {
+        if (unlimitedTime || !timerRunning || lastPoints != null) return@LaunchedEffect
         while (timeLeft > 0 && lastPoints == null && timerRunning) {
             delay(1000)
             timeLeft -= 1
@@ -91,7 +93,8 @@ fun GameScreen(
             }
         }
 
-        // Kopfzeile: nur Zeit (kein Basisscore/kein Multiplikator)
+        // Kopfzeile: nur Zeit anzeigen, wenn Zeitlimit aktiv ist
+        // Kopfzeile im GameScreen
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -108,9 +111,14 @@ fun GameScreen(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Zeit: ${timeLeft}s", style = MaterialTheme.typography.titleMedium)
+                if (unlimitedTime) {
+                    Text("Zeit: ∞", style = MaterialTheme.typography.titleMedium)  // 🆕 statt leer
+                } else {
+                    Text("Zeit: ${timeLeft}s", style = MaterialTheme.typography.titleMedium)
+                }
             }
         }
+
 
         // Inhalt
         Box(
@@ -173,7 +181,6 @@ fun GameScreen(
         if (lastPoints == null) {
             Button(
                 onClick = {
-                    // nur werten, wenn ein Tipp gesetzt wurde
                     if (guess == null) return@Button
 
                     val center = bbox?.let { GeoUtils.bboxCenter(it) }
@@ -194,14 +201,13 @@ fun GameScreen(
                     lastPoints = points
                     timerRunning = false
                 },
-                enabled = timeLeft > 0 && guess != null,   // Bestätigen nur mit gesetztem Tipp
+                enabled = (unlimitedTime || timeLeft > 0) && guess != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
                     .zIndex(1f)
             ) { Text("Bestätigen") }
         } else {
-            // Nach der Wertung: keine Zusatzinfos hier (Distanz kommt in den ResultScreen)
             Button(
                 onClick = {
                     onConfirmGuess(
@@ -215,8 +221,8 @@ fun GameScreen(
                     truth = null
                     lastPoints = null
                     lastDistanceKm = null
-                    timeLeft = roundSeconds
-                    timerRunning = true
+                    timeLeft = if (unlimitedTime) Int.MAX_VALUE else roundSeconds
+                    timerRunning = !unlimitedTime
                     hintsUsed = 0
                 },
                 modifier = Modifier

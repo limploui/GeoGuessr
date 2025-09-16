@@ -8,12 +8,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.example.geoguessr.R
 
 @Composable
@@ -25,6 +25,7 @@ fun SetupScreen(
 ) {
     var rounds by remember { mutableStateOf(initialRounds) }
     var seconds by remember { mutableStateOf(initialSeconds) }
+    var noTimeLimit by remember { mutableStateOf(false) }   // 🆕 Toggle für Zeitlimit
 
     Column(
         modifier = Modifier
@@ -41,7 +42,7 @@ fun SetupScreen(
             textAlign = TextAlign.Center
         )
 
-        // Cards im gleichen Look wie Startscreen-Buttons
+        // Runden
         SettingCard(
             title = "Runden",
             valueText = rounds.toString(),
@@ -51,12 +52,68 @@ fun SetupScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        SettingCard(
-            title = "Zeit",
-            valueText = "${seconds}s",
-            onMinus = { seconds = (seconds - 10).coerceAtLeast(10) },
-            onPlus = { seconds = (seconds + 10).coerceAtMost(600) }
-        )
+        // Zeit (mit rotem X-Button neben dem Wort "Zeit")
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp),
+            elevation = CardDefaults.cardElevation(),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFFFFCC80), // helles Orange
+                contentColor = Color.Black
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Titel + roter X-Button direkt daneben
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "Zeit",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    // 🆕 roter X-Button (Zeitlimit an/aus)
+                    FilledTonalButton(
+                        onClick = { noTimeLimit = !noTimeLimit },
+                        modifier = Modifier.size(40.dp),
+                        contentPadding = PaddingValues(0.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = if (noTimeLimit) Color.Gray else Color.Red,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("x", style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+
+                // Steuerleiste rechts (Minus / Wert / Plus)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SquareActionButton(
+                        text = "−",
+                        onClick = { seconds = (seconds - 10).coerceAtLeast(10) },
+                        enabled = !noTimeLimit
+                    )
+                    ValueBox(valueText = if (noTimeLimit) "∞" else "${seconds}s")
+                    SquareActionButton(
+                        text = "+",
+                        onClick = { seconds = (seconds + 10).coerceAtMost(600) },
+                        enabled = !noTimeLimit
+                    )
+                }
+            }
+        }
 
         Spacer(Modifier.height(16.dp))
 
@@ -73,7 +130,7 @@ fun SetupScreen(
 
             // Weißer Button auf der Karte
             ElevatedButton(
-                onClick = { onStart(rounds, seconds) },
+                onClick = { onStart(rounds, if (noTimeLimit) Int.MAX_VALUE else seconds) },
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.elevatedButtonColors(
                     containerColor = Color.White,
@@ -103,7 +160,7 @@ private fun SettingCard(
             .height(60.dp),
         elevation = CardDefaults.cardElevation(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFFCC80), // helles Orange
+            containerColor = Color(0xFFFFCC80),
             contentColor = Color.Black
         ),
         shape = RoundedCornerShape(16.dp)
@@ -114,22 +171,18 @@ private fun SettingCard(
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Titel links nimmt flexiblen Platz
             Text(
                 title,
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f)
             )
-
-            // Rechte Steuerleiste mit fixer Gesamtbreite (überall gleich)
             Row(
-                modifier = Modifier.width(200.dp), // bei Bedarf anpassen
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                SquareActionButton("−", onMinus)          // fester Button
-                ValueBox(valueText)                        // Wert mit Mindestbreite
-                SquareActionButton("+", onPlus)            // fester Button
+                SquareActionButton("−", onMinus)
+                ValueBox(valueText)
+                SquareActionButton("+", onPlus)
             }
         }
     }
@@ -139,17 +192,20 @@ private fun SettingCard(
 private fun SquareActionButton(
     text: String,
     onClick: () -> Unit,
-    size: Dp = 40.dp
+    size: Dp = 40.dp,
+    enabled: Boolean = true
 ) {
-    // Quadratischer Button → immer gleiche Breite/Höhe
     FilledTonalButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = Modifier.size(size),
         contentPadding = PaddingValues(0.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.filledTonalButtonColors(
             containerColor = Color.White,
-            contentColor = Color.Black
+            contentColor = Color.Black,
+            disabledContainerColor = Color(0xFFFAFAFA),
+            disabledContentColor = Color(0xFF9E9E9E)
         )
     ) {
         Text(
