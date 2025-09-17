@@ -13,13 +13,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.geoguessr.R
 
+/**
+ * StartScreen
+ * - Titel + zwei Karten zum Modus wählen
+ * - Weltbild am unteren Rand mit kleinem Abstand nach unten
+ */
 @Composable
 fun StartScreen(
-    onChooseNormal: () -> Unit,
-    onChooseHint: () -> Unit,
+    onChooseNormal: () -> Unit,   // Callback „Normales Spiel“
+    onChooseHint: () -> Unit,     // Callback „Hinweis Spiel“
 ) {
-    // Wie viel höher das Bild sitzen soll (anpassbar)
-    val bottomOffset = 8.dp   // z.B. 24dp; bei Bedarf 16–32dp testen
+    val bottomOffset = 8.dp       // Feintuning: Abstand unter dem Bild
 
     Column(
         modifier = Modifier
@@ -28,31 +32,34 @@ fun StartScreen(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // App-Titel
         Text(
             "GeoGuezzr",
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier.padding(top = 32.dp, bottom = 48.dp)
         )
 
+        // Modus-Auswahl
         ModeCard("Normales Spiel", onChooseNormal)
         Spacer(Modifier.height(16.dp))
         ModeCard("Hinweis Spiel", onChooseHint)
 
-        // Schiebt das Bild nach unten
+        // Restlichen Platz füllen → Bild rutscht nach unten
         Spacer(Modifier.weight(1f))
 
+        // Weltbild (unten)
         Image(
             painter = painterResource(R.drawable.welt),
             contentDescription = "welt.png",
             modifier = Modifier.fillMaxWidth(0.7f)
         )
 
-        // NEU: kleiner Spacer unter dem Bild → Bild sitzt etwas höher
+        // Kleiner Abstand zum unteren Rand
         Spacer(Modifier.height(bottomOffset))
     }
 }
 
-
+/** Kleine Karte als klickbarer Modus-Button. */
 @Composable
 private fun ModeCard(title: String, onClick: () -> Unit) {
     Card(
@@ -62,8 +69,8 @@ private fun ModeCard(title: String, onClick: () -> Unit) {
             .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFFCC80), // grüner Button
-            contentColor = Color.Black        // weiße Schrift
+            containerColor = Color(0xFFFFCC80),
+            contentColor = Color.Black
         )
     ) {
         Box(
@@ -74,5 +81,3 @@ private fun ModeCard(title: String, onClick: () -> Unit) {
         }
     }
 }
-
-

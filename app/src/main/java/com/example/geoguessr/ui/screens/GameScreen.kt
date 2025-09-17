@@ -17,61 +17,99 @@ import kotlinx.coroutines.delay
 import kotlin.math.min
 import kotlin.math.roundToInt
 
+/**
+ * GameScreen
+ *
+ * Verantwortlich für:
+ * - Streetview-/Mapillary-Ansicht (WebView)
+ * - Tipps (Hint-Tab) anzeigen und zählen
+ * - Karte zur Eingabe des Tipps (Tap setzt Marker)
+ * - Countdown / Zeitverwaltung
+ * - Punkteberechnung & Distanzberechnung
+ * - Übergabe des Rundenergebnisses an den Aufrufer
+ */
 @Composable
 fun GameScreen(
-    accessToken: String,
-    imageId: String,
-    bbox: DoubleArray?,
-    trueLocation: Pair<Double, Double>?,   // (lat, lon)
-    roundSeconds: Int = 60,
-    isHintMode: Boolean = false,
-    hints: List<String> = emptyList(),
-    onConfirmGuess: (RoundResult) -> Unit
+    accessToken: String,                        // Mapillary Access Token (nur Token, kein "OAuth ")
+    imageId: String,                            // aktuell zu zeigendes Mapillary Bild/Panorama
+    bbox: DoubleArray?,                         // Bounding Box der aktiven Region [minLon, minLat, maxLon, maxLat]
+    trueLocation: Pair<Double, Double>?,        // wahre Position (lat, lon); optional (sonst BBox-Mittelpunkt)
+    roundSeconds: Int = 60,                     // Zeitlimit in Sekunden (oder Int.MAX_VALUE für ∞)
+    isHintMode: Boolean = false,                // Schaltet den Tipps-Tab ein
+    hints: List<String> = emptyList(),          // Liste der Hinweise für die aktuelle Region
+    onConfirmGuess: (RoundResult) -> Unit       // Callback am Ende der Runde (Punkte + Distanz)
 ) {
-    // Tabs: 0 Streetview, 1 Tipps (nur im Hint-Mode), 2 Karte
+    // ---- UI-Tab-Logik -------------------------------------------------------
+    // 0 = Streetview, 1 = Tipps (nur im Hint-Mode sichtbar), 2 = Karte
     var tab by remember { mutableStateOf(0) }
 
+    // ---- In-Runden-Status ---------------------------------------------------
+    // Spieler-Tipp (lat, lon); "saveable", damit z. B. bei Recomposition/Rotation erhalten bleibt
     var guess by rememberSaveable { mutableStateOf<Pair<Double, Double>?>(null) }
+
+    // Wahrheitspunkt, den wir nach dem Bestätigen einblenden (z. B. BBox-Mittelpunkt)
     var truth by rememberSaveable { mutableStateOf<Pair<Double, Double>?>(null) }
+
+    // Punkte der Runde, null solange noch nicht bestätigt
     var lastPoints by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    // Distanz der Runde in km, null solange noch nicht bestätigt
     var lastDistanceKm by rememberSaveable { mutableStateOf<Double?>(null) }
 
-    // ∞-Modus?
+    // ---- Zeitmodus (Countdown vs. ∞) ----------------------------------------
     val unlimitedTime = roundSeconds == Int.MAX_VALUE
 
-    // ⏱️ Timer-State (bei ∞ kein Countdown)
+    // Restzeit in Sekunden (oder Int.MAX_VALUE für ∞). Reset bei neuem imageId.
     var timeLeft by remember(imageId, unlimitedTime) {
         mutableStateOf(if (unlimitedTime) Int.MAX_VALUE else roundSeconds)
     }
+
+    // Steuert, ob der Timer tickt (bei ∞ von Anfang an aus)
     var timerRunning by remember(imageId, unlimitedTime) { mutableStateOf(!unlimitedTime) }
 
-    // 💡 Hints (0..5)
+    // ---- Hints / Tipps ------------------------------------------------------
+    // Zählt, wie viele Tipps der Spieler bereits aufgedeckt hat (0..5)
     var hintsUsed by rememberSaveable(imageId) { mutableStateOf(0) }
 
-    // Falls Hinweis-Tab verschwindet, zurück zu Streetview
+    // Wenn der Hint-Tab nicht verfügbar ist (Normalmodus), und wir gerade darauf sind,
+    // springe sicherheitshalber zurück auf Streetview
     LaunchedEffect(isHintMode) {
         if (!isHintMode && tab == 1) tab = 0
+        // Wenn der 2. Tab im Normalmodus die Karte ist, und man von Hint-Mode kommt:
         if (!isHintMode && tab == 2) tab = 1
     }
 
-    // ⏱️ Countdown → nur wenn Zeitlimit aktiv ist
+    // ---- Countdown-Logik ----------------------------------------------------
+    // Tick jede Sekunde, solange:
+    // - ein Zeitlimit existiert
+    // - Timer läuft
+    // - noch kein Ergebnis feststeht
     LaunchedEffect(imageId, timerRunning, lastPoints, unlimitedTime) {
         if (unlimitedTime || !timerRunning || lastPoints != null) return@LaunchedEffect
         while (timeLeft > 0 && lastPoints == null && timerRunning) {
             delay(1000)
             timeLeft -= 1
         }
+        // Zeit ist abgelaufen -> falls schon geraten wurde, Ergebnis automatisch berechnen
         if (timeLeft <= 0 && lastPoints == null) {
-            val center = bbox?.let { GeoUtils.bboxCenter(it) }
+            val center = bbox?.let { GeoUtils.bboxCenter(it) } // Fallback-Ziel: Mittelpunkt der BBox
             val target = trueLocation ?: center
             if (guess != null && target != null) {
                 truth = center
                 val dKm = GeoUtils.haversineKm(guess!!.first, guess!!.second, target.first, target.second)
                 lastDistanceKm = dKm
+
+                // Basispunkte 0..5000 invers zur Distanz
                 val basePoints = GeoUtils.scoreFromDistanceKm(dKm)
+
+                // Multiplikator im Hinweis-Modus (6..1) je nach genutzten Tipps,
+                // im Normalmodus 1.0 (kein Boost)
                 val mult = if (isHintMode) GeoUtils.hintMultiplier(hintsUsed) else 1.0
+
+                // Endpunkte runden und auf 5000 deckeln (Variante B)
                 lastPoints = (basePoints * mult).roundToInt().coerceAtMost(5000)
             } else {
+                // Kein Tipp gesetzt -> 0 Punkte, keine Distanz
                 truth = null
                 lastDistanceKm = null
                 lastPoints = 0
@@ -80,9 +118,10 @@ fun GameScreen(
         }
     }
 
+    // ---- UI: Grundlayout ----------------------------------------------------
     Column(Modifier.fillMaxSize()) {
 
-        // Tabs
+        // Tabs (Straße/Tipps/Karte) – im Normalmodus nur 2 Tabs
         val tabTitles = if (isHintMode)
             listOf("Streetview", "Tipps", "Karte")
         else
@@ -90,14 +129,14 @@ fun GameScreen(
 
         TabRow(
             selectedTabIndex = tab,
-            modifier = Modifier.zIndex(2f)
+            modifier = Modifier.zIndex(2f) // überlagert Inhalte leicht (Schatten/Trennung)
         ) {
             tabTitles.forEachIndexed { index, title ->
                 Tab(selected = tab == index, onClick = { tab = index }, text = { Text(title) })
             }
         }
 
-        // Kopfzeile (zeigt ∞ bei ausgeschalteter Zeit)
+        // Kopfzeile mit Zeit – zeigt ∞ bei ausgeschaltetem Zeitlimit
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -121,18 +160,21 @@ fun GameScreen(
             }
         }
 
-        // Inhalt
+        // Hauptbereich: Streetview / Tipps / Karte
         Box(
             Modifier
-                .weight(1f)
+                .weight(1f)   // nimmt den restlichen verfügbaren Platz ein
                 .zIndex(0f)
         ) {
             when (tab) {
+                // 0) Streetview/Mapillary-Viewer
                 0 -> MapillaryViewer(
                     accessToken = accessToken,
                     imageId = imageId,
                     modifier = Modifier.fillMaxSize()
                 )
+
+                // 1) Tipps (nur im Hint-Mode sichtbar)
                 1 -> {
                     if (isHintMode) {
                         Column(
@@ -140,6 +182,7 @@ fun GameScreen(
                                 .fillMaxSize()
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
+                            // so viele Tipps anzeigen, wie bereits angefordert wurden
                             val shown = min(hintsUsed, hints.size)
                             if (hints.isEmpty()) {
                                 Text("Keine Tipps verfügbar.")
@@ -151,21 +194,25 @@ fun GameScreen(
                             Spacer(Modifier.height(12.dp))
                             Button(
                                 onClick = {
+                                    // max. 5 Tipps nutzbar und nicht mehr als vorhanden
                                     if (hintsUsed < 5 && hintsUsed < hints.size) hintsUsed++
                                 },
                                 enabled = lastPoints == null && hintsUsed < min(5, hints.size)
                             ) { Text("Tipp anzeigen") }
                         }
                     } else {
+                        // Falls Tab 1 im Normalmodus: Karte statt Tipps
                         OsmdroidMap(
                             modifier = Modifier.fillMaxSize(),
                             bbox = bbox,
                             guessPoint = guess,
                             truthPoint = truth,
-                            onTap = { lat, lon -> guess = Pair(lat, lon) }
+                            onTap = { lat, lon -> guess = Pair(lat, lon) } // Tipp setzen
                         )
                     }
                 }
+
+                // 2) Karte (nur im Hint-Mode; im Normalmodus ist sie Tab 1)
                 2 -> {
                     OsmdroidMap(
                         modifier = Modifier.fillMaxSize(),
@@ -178,8 +225,9 @@ fun GameScreen(
             }
         }
 
-        // Aktionen
+        // ---- Aktionen: Bestätigen / Weiter ----------------------------------
         if (lastPoints == null) {
+            // Noch kein Ergebnis -> Button „Bestätigen“
             Button(
                 onClick = {
                     if (guess == null) return@Button
@@ -188,12 +236,13 @@ fun GameScreen(
                     truth = center
                     val target = trueLocation ?: center
 
+                    // Punkte + Distanz berechnen (nur wenn Ziel bekannt)
                     val (points, distKm) = if (target != null) {
                         val dKm = GeoUtils.haversineKm(
                             guess!!.first, guess!!.second,
                             target.first, target.second
                         )
-                        val base = GeoUtils.scoreFromDistanceKm(dKm)             // 0..5000
+                        val base = GeoUtils.scoreFromDistanceKm(dKm) // 0..5000
                         val mult = if (isHintMode) GeoUtils.hintMultiplier(hintsUsed) else 1.0
                         ((base * mult).roundToInt().coerceAtMost(5000)) to dKm
                     } else 0 to null
@@ -202,22 +251,24 @@ fun GameScreen(
                     lastPoints = points
                     timerRunning = false
                 },
-                enabled = (unlimitedTime || timeLeft > 0) && guess != null,
+                enabled = (unlimitedTime || timeLeft > 0) && guess != null, // nur mit Tipp & ggf. Restzeit
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
                     .zIndex(1f)
             ) { Text("Bestätigen") }
         } else {
+            // Ergebnis liegt vor -> Button „Weiter“ (nächste Runde / Endscreen)
             Button(
                 onClick = {
+                    // Ergebnis nach „oben“ melden
                     onConfirmGuess(
                         RoundResult(
                             points = lastPoints ?: 0,
                             distanceKm = lastDistanceKm ?: 0.0
                         )
                     )
-                    // Reset für nächste Runde
+                    // Zustand für nächste Runde zurücksetzen
                     guess = null
                     truth = null
                     lastPoints = null

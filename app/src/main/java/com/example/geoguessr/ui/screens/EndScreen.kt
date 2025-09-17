@@ -19,6 +19,11 @@ import androidx.compose.ui.res.painterResource
 import com.example.geoguessr.R
 
 
+/**
+ * Endscreen:
+ * Der EndScreen zeigt die Gesamtpunktzahl, die Gesamtdistanz,
+ * eine scrollbare Liste aller Runden mit Punkten und Distanzen,
+ */
 @Composable
 fun EndScreen(
     totalPoints: Int,
@@ -27,19 +32,21 @@ fun EndScreen(
     onNewGame: () -> Unit
 ) {
     // gleiche Bottom-Bild-Logik wie im SetupScreen
-    val IMAGE_WIDTH_FRACTION = 0.7f
-    val ASPECT_RATIO = 1.6f
-    val MIN_IMAGE_HEIGHT = 240.dp
-    val MAX_IMAGE_HEIGHT = 360.dp
+    val imageWidthFraction = 0.7f
+    val aspectRatio = 1.6f
+    val minImageHeight = 240.dp
+    val maxImageHeight = 360.dp
 
+    // Gesamthöhe der Box unten berechnen
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
     ) {
-        val desiredWidth = maxWidth * IMAGE_WIDTH_FRACTION
-        val desiredHeight = desiredWidth / ASPECT_RATIO
-        val bottomHeight = desiredHeight.coerceIn(MIN_IMAGE_HEIGHT, MAX_IMAGE_HEIGHT)
+        // Höhe der Bildbox so bestimmen, dass sie zur gewünschten Bildbreite passt:
+        val desiredWidth = maxWidth * imageWidthFraction
+        val desiredHeight = desiredWidth / aspectRatio
+        val bottomHeight = desiredHeight.coerceIn(minImageHeight, maxImageHeight)
 
         // OBERER BEREICH: Inhalt + scrollbare Ergebnisliste
         Column(
@@ -125,7 +132,7 @@ fun EndScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(IMAGE_WIDTH_FRACTION)
+                    .fillMaxWidth(imageWidthFraction)
                     .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {

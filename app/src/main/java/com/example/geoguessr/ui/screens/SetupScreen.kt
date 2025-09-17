@@ -19,37 +19,39 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.layout.ContentScale
 
-
-
+/**
+ * SetupScreen
+ * - Oben: Titel, Runden- und Zeit-Einstellungen (scrollbar).
+ * - Unten: Weltbild fixiert mit „Los geht’s“-Button.
+ */
 @Composable
 fun SetupScreen(
-    modeTitle: String,
-    initialRounds: Int = 1,
-    initialSeconds: Int = 60,
-    onStart: (rounds: Int, seconds: Int) -> Unit
+    modeTitle: String,                  // Überschrift (abhängig vom Modus)
+    initialRounds: Int = 1,             // Startwert Runden
+    initialSeconds: Int = 60,           // Startwert Sekunden
+    onStart: (rounds: Int, seconds: Int) -> Unit // Callback beim Start
 ) {
     var rounds by remember { mutableStateOf(initialRounds) }
     var seconds by remember { mutableStateOf(initialSeconds) }
-    var noTimeLimit by remember { mutableStateOf(false) }   // Toggle für Zeitlimit
+    var noTimeLimit by remember { mutableStateOf(false) }   // ∞-Zeit an/aus
 
-    // Tuning-Parameter für die Bildbox unten
-    val IMAGE_WIDTH_FRACTION = 0.7f   // wie breit das Bild unten relativ zur Screenbreite sein soll
-    val ASPECT_RATIO = 1.6f           // Breite / Höhe des Bildes (z.B. 16:10 ≈ 1.6; 16:9 wäre ≈ 1.78)
-    val MIN_IMAGE_HEIGHT = 240.dp     // untere Klammer
-    val MAX_IMAGE_HEIGHT = 360.dp     // obere Klammer
+    // Layout-Tuning für die Bildfläche unten (Breite/Höhe anpassbar)
+    val imageWidthFraction = 0.7f       // Anteil der Bildschirmbreite für das Bild
+    val aspectRatio = 1.6f              // Breite / Höhe (z. B. 16:10 ≈ 1.6)
+    val minImageHeight = 240.dp         // Mindesthöhe der Bildbox
+    val maxImageHeight = 360.dp         // Maximalhöhe der Bildbox
 
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
     ) {
-        // Höhe der Bildbox so bestimmen, dass sie zur gewünschten Bildbreite passt:
-        // height = (width * fraction) / aspect
-        val desiredWidth = maxWidth * IMAGE_WIDTH_FRACTION
-        val desiredHeight = desiredWidth / ASPECT_RATIO
-        val bottomHeight = desiredHeight.coerceIn(MIN_IMAGE_HEIGHT, MAX_IMAGE_HEIGHT)
+        // Höhe der unteren Bildbox aus der gewünschten Breite ableiten
+        val desiredWidth = maxWidth * imageWidthFraction
+        val desiredHeight = desiredWidth / aspectRatio
+        val bottomHeight = desiredHeight.coerceIn(minImageHeight, maxImageHeight)
 
-        // OBERER BEREICH: scrollt; bekommt unten Padding, damit er nicht in die Bildbox ragt
+        // Oberer Bereich: Inhalt kann scrollen, unten Platz für die Bildbox lassen
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -58,6 +60,7 @@ fun SetupScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Titel
             Text(
                 modeTitle,
                 style = MaterialTheme.typography.headlineLarge,
@@ -65,7 +68,7 @@ fun SetupScreen(
                 textAlign = TextAlign.Center
             )
 
-            // Runden
+            // Runden-Einstellung
             SettingCard(
                 title = "Runden",
                 valueText = rounds.toString(),
@@ -75,7 +78,7 @@ fun SetupScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Zeit (mit rotem X-Button)
+            // Zeit-Einstellung (mit „x“ für ∞)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -93,6 +96,7 @@ fun SetupScreen(
                         .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Titel + Toggle für Zeitlimit
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
@@ -110,6 +114,7 @@ fun SetupScreen(
                             )
                         ) { Text("x", style = MaterialTheme.typography.titleMedium) }
                     }
+                    // Minus / Wert / Plus (deaktiviert bei ∞)
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -130,10 +135,10 @@ fun SetupScreen(
             }
 
             Spacer(Modifier.height(16.dp))
-            // (Bild ist unten fixiert – hier kein Bild mehr)
+            // Hinweis: Das Bild sitzt unten fix – hier kein Bild mehr einfügen.
         }
 
-        // UNTERER BEREICH: Bild fix am unteren Rand, Höhe wie berechnet
+        // Unterer Bereich: Weltbild fix am Boden + Start-Button darüber
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -143,7 +148,7 @@ fun SetupScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(IMAGE_WIDTH_FRACTION)
+                    .fillMaxWidth(imageWidthFraction)
                     .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
@@ -153,7 +158,6 @@ fun SetupScreen(
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize()
                 )
-
                 ElevatedButton(
                     onClick = { onStart(rounds, if (noTimeLimit) Int.MAX_VALUE else seconds) },
                     shape = RoundedCornerShape(16.dp),
@@ -173,14 +177,14 @@ fun SetupScreen(
     }
 }
 
-
+// Kleine Hilfskomponenten (unverändert), kurz kommentiert:
 
 @Composable
 private fun SettingCard(
-    title: String,
-    valueText: String,
-    onMinus: () -> Unit,
-    onPlus: () -> Unit
+    title: String,                  // Label (z. B. „Runden“)
+    valueText: String,              // angezeigter Wert
+    onMinus: () -> Unit,            // Klick auf „−“
+    onPlus: () -> Unit              // Klick auf „+“
 ) {
     Card(
         modifier = Modifier
@@ -218,7 +222,7 @@ private fun SettingCard(
 
 @Composable
 private fun SquareActionButton(
-    text: String,
+    text: String,                   // „−“ oder „+“
     onClick: () -> Unit,
     size: Dp = 40.dp,
     enabled: Boolean = true
@@ -246,7 +250,7 @@ private fun SquareActionButton(
 
 @Composable
 private fun ValueBox(
-    valueText: String,
+    valueText: String,              // aktueller Wert (z. B. „5“ oder „∞“)
     minWidth: Dp = 64.dp
 ) {
     Box(

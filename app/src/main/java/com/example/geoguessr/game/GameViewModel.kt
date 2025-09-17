@@ -79,7 +79,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         _results.clear()
     }
 
-    // NEU: nimmt RoundResult entgegen (Punkte + Distanz)
+    // nimmt RoundResult entgegen (Punkte + Distanz)
     fun finishRound(summary: RoundResult) {
         lastRoundPoints = summary.points
         lastRoundDistanceKm = summary.distanceKm

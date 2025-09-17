@@ -2,21 +2,16 @@
 <html lang="de">
 <head>
     <meta charset="utf-8" />
-    <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-    <!-- Mapillary JS + CSS (CDN) -->
-    <link
-            rel="stylesheet"
-            href="https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.css"
-    />
+    <!-- Mapillary JS + CSS (CDN) einbinden -->
+    <link rel="stylesheet" href="https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.css" />
     <script src="https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.js"></script>
 
     <title>Mapillary Viewer</title>
 
     <style>
+        /* Basis: Vollbild, dunkler Hintergrund, System-Schrift */
         html, body {
           height: 100%;
           margin: 0;
@@ -25,12 +20,12 @@
           color: #fff;
           font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
         }
-        /* füllt den gesamten WebView */
+        /* Viewer füllt den kompletten WebView */
         #mly {
           position: fixed;
           inset: 0;
         }
-        /* optionale Overlay-Fehlerbox */
+        /* Kleine Fehlerleiste unten (nur bei Fehler sichtbar) */
         #err {
           position: fixed;
           left: 0; right: 0; bottom: 0;
@@ -41,7 +36,7 @@
           display: none;
           white-space: pre-wrap;
         }
-        /* Hinweis wenn JS deaktiviert wäre */
+        /* Hinweis falls JS deaktiviert wäre */
         noscript {
           position: fixed; inset: 0;
           display: grid; place-items: center;
@@ -52,14 +47,14 @@
     </style>
 </head>
 <body>
+<!-- Container für den Mapillary Viewer -->
 <div id="mly"></div>
+<!-- Overlay für Fehlermeldungen -->
 <div id="err"></div>
 <noscript>Diese Seite benötigt JavaScript.</noscript>
 
 <script>
-    // -------------------------------
-    // Utility: kompaktes Error-Overlay
-    // -------------------------------
+    // ===== Fehler-Overlay (global) ==========================================
     (function attachGlobalErrorHandlers() {
       const errBox = document.getElementById("err");
       function showErr(msg) {
@@ -72,27 +67,21 @@
       window.addEventListener("unhandledrejection", (e) => showErr(e.reason || e));
     })();
 
-    // Globaler State
+    // ===== Globaler State für Viewer & Warteschlange ========================
     window.MLY = {
-      viewer: null,
-      ready: false,
-      queue: [],
-      firstId: null,
-      // ⬇️ NEU: Wird bei jedem Bildwechsel gesetzt und beim ersten sichtbaren Frame wieder gelöscht
-      firstFramePending: false,
+      viewer: null,          // Mapillary Viewer-Instanz
+      ready: false,          // wird true, wenn 'load' gefeuert hat
+      queue: [],             // Bild-IDs, die vor 'ready' angefordert wurden
+      firstId: null,         // erste Ziel-ID beim Start
+      firstFramePending: false, // true: warte auf erstes sichtbares Bild nach moveTo()
     };
 
-    // Hilfsfunktion: moveTo mit sauberem Logging
+    // moveTo-Helfer mit Logging
     function tryMove(id, reason) {
-      if (!id) {
-        console.warn("[MJS] tryMove ohne ID:", id, "reason:", reason);
-        return;
-      }
-      if (!window.MLY.viewer) {
-        console.warn("[MJS] tryMove ohne viewer:", id, "reason:", reason);
-        return;
-      }
-      // ⬇️ NEU: Ab jetzt warten wir auf den ersten Frame
+      if (!id) { console.warn("[MJS] tryMove ohne ID:", id, "reason:", reason); return; }
+      if (!window.MLY.viewer) { console.warn("[MJS] tryMove ohne viewer:", id, "reason:", reason); return; }
+
+      // ab jetzt auf erstes Frame warten (für Android-Callback)
       window.MLY.firstFramePending = true;
 
       window.MLY.viewer
@@ -101,7 +90,7 @@
         .catch(err => console.error("[MJS] moveTo FAILED:", id, "reason:", reason, err));
     }
 
-    // WICHTIG: Stelle sicher, dass mapillary geladen ist
+    // Prüfen, ob Mapillary-Bibliothek geladen ist
     function ensureLibraryAvailable() {
       const ok = (typeof window.mapillary !== "undefined")
                  && window.mapillary
@@ -110,18 +99,18 @@
       return ok;
     }
 
-    // Initialisierung – wird aus Android (WebView) aufgerufen
+    // ===== Init: wird aus Android via evaluateJavascript aufgerufen =========
     window.init = function (accessToken, imageId) {
       console.log("[MJS] init called. mapillary =", typeof window.mapillary);
 
-      // Falls Library noch nicht da ist (sehr selten), kurz verzögert erneut versuchen
+      // Falls die Lib noch nicht bereit ist → kurz später erneut probieren
       if (!ensureLibraryAvailable()) {
         console.warn("[MJS] mapillary noch nicht bereit – retry in 200ms");
         setTimeout(() => window.init(accessToken, imageId), 200);
         return;
       }
 
-      // Falls bereits ein Viewer existiert → Wiederverwendung
+      // Bereits existierenden Viewer wiederverwenden
       if (window.MLY.viewer) {
         console.log("[MJS] Viewer existiert bereits – setze Bild direkt");
         window.MLY.firstId = imageId;
@@ -134,43 +123,42 @@
         return;
       }
 
+      // Erste Ziel-ID vormerken
       window.MLY.firstId = imageId;
 
-      // Viewer erstellen
+      // Viewer erzeugen (Container: #mly)
       const { Viewer } = window.mapillary;
       const v = new Viewer({
-        accessToken: accessToken,   // nur das Token, kein "OAuth "
+        accessToken: accessToken, // nur Token (kein "OAuth ")
         container: 'mly'
       });
       window.MLY.viewer = v;
-      // ⬇️ NEU: globaler Handle, damit Android-Seite hooks injizieren kann
-      window._viewer = v;
-
+      window._viewer = v;        // optional: globaler Handle für Android-Hooks
       console.log("[MJS] Viewer created");
 
-      // Fired wenn Viewer komplett initialisiert ist
+      // 'load' → Viewer ist initialisiert
       v.on('load', () => {
         console.log("[MJS] Viewer ready");
         window.MLY.ready = true;
 
-        // Falls wir schon eine ID haben -> gleich versuchen
+        // direkt zu firstId springen, falls vorhanden
         if (window.MLY.firstId) {
           tryMove(window.MLY.firstId, "on_load_firstId");
         }
 
-        // Warteschlange abarbeiten
+        // ggf. aufgelaufene setImage-Calls abarbeiten
         while (window.MLY.queue.length) {
           const id = window.MLY.queue.shift();
           tryMove(id, "on_load_queue");
         }
       });
 
-      // Fired bei jedem Bildwechsel
+      // 'image' → wird bei jedem Bildwechsel gefeuert
       v.on('image', e => {
         const id = e && e.image && e.image.id;
         console.log("[MJS] Bild geladen:", id);
 
-        // ⬇️ NEU: Erstes sichtbares Frame nach einem moveTo → Android benachrichtigen (einmalig)
+        // Erstes sichtbares Frame nach moveTo → Android informieren (einmalig)
         if (window.MLY.firstFramePending) {
           window.MLY.firstFramePending = false;
           if (window.AndroidBridge && typeof AndroidBridge.onFirstImageRendered === 'function') {
@@ -179,25 +167,18 @@
         }
       });
 
-      // Watchdog: Falls 'load' wider Erwarten nicht kommt
+      // Watchdog: falls 'load' unerwartet lange ausbleibt
       setTimeout(() => {
-        if (!window.MLY.ready) {
+        if (!window.MLY.ready && window.MLY.firstId) {
           console.warn("[MJS] Viewer noch nicht ready nach 2000ms – Watchdog versucht moveTo()");
-          if (window.MLY.firstId) {
-            tryMove(window.MLY.firstId, "watchdog");
-          }
+          tryMove(window.MLY.firstId, "watchdog");
         }
       }, 2000);
     };
 
-    // Bildwechsel – wird aus Android aufgerufen
+    // ===== Bildwechsel: wird aus Android aufgerufen =========================
     window.setImage = function (imageId) {
-      if (!window.MLY.viewer) {
-        console.log("[MJS] setImage vor init; queue", imageId);
-        window.MLY.queue.push(imageId);
-        return;
-      }
-      if (!window.MLY.ready) {
+      if (!window.MLY.viewer || !window.MLY.ready) {
         console.log("[MJS] viewer not ready; queue", imageId);
         window.MLY.queue.push(imageId);
         return;
@@ -205,6 +186,5 @@
       tryMove(imageId, "setImage");
     };
 </script>
-
 </body>
 </html>
