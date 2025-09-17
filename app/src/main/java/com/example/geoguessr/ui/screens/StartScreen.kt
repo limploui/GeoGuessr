@@ -15,7 +15,7 @@ import com.example.geoguessr.R
 
 /**
  * StartScreen
- * - Titel + zwei Karten zum Modus wählen
+ * - Titel + zwei Karten zur Auswahl des Modus
  * - Weltbild am unteren Rand mit kleinem Abstand nach unten
  */
 @Composable

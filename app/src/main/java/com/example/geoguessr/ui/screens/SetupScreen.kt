@@ -22,8 +22,8 @@ import androidx.compose.ui.layout.ContentScale
 
 /**
  * SetupScreen
- * - Oben: Titel, Runden- und Zeit-Einstellungen (scrollbar).
- * - Unten: Weltbild fixiert mit „Los geht’s“-Button.
+ * - Oben: Titel, Runden- und Zeit-Einstellungen (scrollbar)
+ * - Unten: Weltbild fixiert mit „Los geht’s“-Button
  */
 @Composable
 fun SetupScreen(

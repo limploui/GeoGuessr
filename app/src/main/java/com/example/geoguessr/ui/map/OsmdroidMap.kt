@@ -15,6 +15,9 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 
+// Hier ist die Osmdroid-Karte als Composable.
+// Sie bekommt eine optionale BBox (für Auto-Fit), einen Tipp-Punkt (guess) und einen
+// Wahr-Punkt , die sie als Marker anzeigt.
 @Composable
 fun OsmdroidMap(
     modifier: Modifier = Modifier,

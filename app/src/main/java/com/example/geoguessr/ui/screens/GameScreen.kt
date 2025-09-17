@@ -26,7 +26,8 @@ import kotlin.math.roundToInt
  * - Karte zur Eingabe des Tipps (Tap setzt Marker)
  * - Countdown / Zeitverwaltung
  * - Punkteberechnung & Distanzberechnung
- * - Übergabe des Rundenergebnisses an den Aufrufer
+ * - Tab-Wechsel (Streetview, Tipps, Karte)
+ * - Bestätigen des Tipps und Weiter zur nächsten Runde
  */
 @Composable
 fun GameScreen(

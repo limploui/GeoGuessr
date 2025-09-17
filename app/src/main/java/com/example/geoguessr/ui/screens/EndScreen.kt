@@ -23,6 +23,7 @@ import com.example.geoguessr.R
  * Endscreen:
  * Der EndScreen zeigt die Gesamtpunktzahl, die Gesamtdistanz,
  * eine scrollbare Liste aller Runden mit Punkten und Distanzen,
+ * sowie einen Button, um ein neues Spiel zu starten.
  */
 @Composable
 fun EndScreen(

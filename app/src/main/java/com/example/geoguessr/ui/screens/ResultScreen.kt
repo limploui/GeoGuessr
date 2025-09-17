@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
  * - Punkte dieser Runde
  * - Distanz des Tipps zur Lösung
  * - Button zur nächsten Runde
+ * - Auch addiert
  */
 @Composable
 fun ResultScreen(
