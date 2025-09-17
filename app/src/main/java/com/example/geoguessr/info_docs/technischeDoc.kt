@@ -24,7 +24,7 @@
  * Daten- und Netzwerkschicht (MapillaryApi & MapillaryClient)
  * MapillaryApi beschreibt exakt einen Endpunkt GET images, inklusive der Felder id, computed_geometry, computed_compass_angle,
  * thumb_1024_url, is_pano. Das DTO ist minimal gehalten, damit nur das ankommt, was die UI wirklich braucht, und die Antwort sauber
- * serialisiert werden kann. MapillaryClient kapselt den kompletten Zugriff: Header mit OAuth-Token, Timeouts, Logging und sichere
+ * serialisiert werden kann. MapillaryClient kapselt den kompletten Zugriff. Header mit OAuth-Token, Timeouts, Logging und sichere
  * Filterung auf gültige Einträge. Für zufällige Inhalte gibt es getRandomPano (strict) und getRandomImage (flexibel), jeweils mit
  * Nachbearbeitung, um kaputte Items zu filtern. Die BBox wird bei Bedarf schrittweise vergrößert, um die Trefferwahrscheinlichkeit
  * zu erhöhen, ohne die Region komplett zu sprengen.
