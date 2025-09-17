@@ -4,6 +4,7 @@ package com.example.geoguessr.util
 import kotlin.math.*
 
 object GeoUtils {
+    //Final
     /** bbox = [minLon, minLat, maxLon, maxLat] -> Mittelpunkt (lat, lon) */
     fun bboxCenter(bbox: DoubleArray): Pair<Double, Double> {
         val lon = (bbox[0] + bbox[2]) / 2.0

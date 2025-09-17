@@ -133,6 +133,7 @@ class ViewModeltwo(application: Application) : AndroidViewModel(application) {
     private val _currentRegionName = MutableLiveData<String?>()
     val currentRegionName: LiveData<String?> = _currentRegionName
 
+    //Final
     /** Regionen + optionale Hinweise setzen
      * Setzt, welche Regionen/Namen/Hints verwendet werden.*/
     fun setRegions(

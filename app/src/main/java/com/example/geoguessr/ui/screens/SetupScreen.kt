@@ -21,6 +21,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.layout.ContentScale
 
 /**
+ *
+ * Final
  * SetupScreen
  * - Oben: Titel, Runden- und Zeit-Einstellungen (scrollbar)
  * - Unten: Weltbild fixiert mit „Los geht’s“-Button

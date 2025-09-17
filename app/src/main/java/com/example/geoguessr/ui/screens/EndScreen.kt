@@ -20,6 +20,7 @@ import com.example.geoguessr.R
 
 
 /**
+ * Final
  * Endscreen:
  * Der EndScreen zeigt die Gesamtpunktzahl, die Gesamtdistanz,
  * eine scrollbare Liste aller Runden mit Punkten und Distanzen,

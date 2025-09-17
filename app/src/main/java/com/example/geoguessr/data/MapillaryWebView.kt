@@ -15,6 +15,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
+// Final
 // Zeigt ein Mapillary Bild oder Pano in einem WebView an
 // Das ist das Fenster für Streetview-ähnliche Bilder
 fun MapillaryViewer(

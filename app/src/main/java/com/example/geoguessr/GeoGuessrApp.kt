@@ -7,6 +7,7 @@ import android.preference.PreferenceManager
 import org.osmdroid.config.Configuration
 import java.io.File
 
+//Final
 class GeoGuessrApp : Application() {
     override fun onCreate() {
         super.onCreate()

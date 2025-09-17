@@ -17,6 +17,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 class MapillaryClient(context: Context) {
+    // Final
     // Hier werden Auth, Logging, Fehlerbehandlung und Feld-Auswahl gekapselt, ähnlich wie Backend.
     // Dein Client-Token (kein OAuth nötig)
     private val clientToken: String = "MLY|25128393533414969|53cc9f3a61d67b7e6648f080f4cdff1d"

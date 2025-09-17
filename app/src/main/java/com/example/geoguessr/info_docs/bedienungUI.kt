@@ -1,6 +1,7 @@
 package com.example.geoguessr.info_docs
 
 /**
+ * Final
  * Einstieg
  * Du wählst auf dem Startscreen zwischen „Normales Spiel“ und „Hinweis Spiel“.
  * Ziel jeder Runde: Panorama ansehen, Ort auf der Karte tippen, Punkte kassieren.

@@ -1,5 +1,5 @@
 /**
- *
+ *Final
  * package com.example.geoguessr.info_docs
  *
  * Technische Doku – GeoGuezzr (Android, Compose, Mapillary)

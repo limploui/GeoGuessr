@@ -34,6 +34,7 @@ import coil.request.ImageRequest
 import com.example.geoguessr.game.GameMode
 import com.example.geoguessr.ui.theme.GeoGuessrTheme
 
+//Final
 class MainActivity : AppCompatActivity() {
     //Beim Start werden Regionen + Namen + Hints in ViewModeltwo gesetzt.
     //Danach baut setContent { … } die komplette Compose-Oberfläche:

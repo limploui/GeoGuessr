@@ -11,6 +11,7 @@ data class RoundResult(
     val distanceKm: Double
 )
 
+// Final
 // Das GameViewModel merkt sich alles, was zum Spielstand gehört:
 //Welcher Modus läuft (Normal oder Hinweis)?
 //Wieviele Runden gibt’s insgesamt, welche ist gerade dran?

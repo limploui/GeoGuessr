@@ -3,7 +3,9 @@ package com.example.geoguessr.data
 
 import retrofit2.http.GET
 import retrofit2.http.Query
-//Wie reden wir mit Mapillary API, ein Serververtrag. Gibt an, was für Endpunkte es gibt und welche Parameter.
+//Final
+// Wie reden wir mit Mapillary API. --> Serververtrag.
+// Gibt an, was für Endpunkte es gibt und welche Parameter.
 interface MapillaryApi {
 
     // Beispiel-Call: /images?bbox=...&fields=id,computed_geometry,computed_compass_angle,thumb_1024_url,is_pano&limit=200

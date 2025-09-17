@@ -23,6 +23,7 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 
+//Final
 @Composable
 fun OsmdroidMap(
     modifier: Modifier = Modifier,

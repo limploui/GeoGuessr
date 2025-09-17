@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 /**
+ * Final
  * ResultScreen:
  * Zeigt das Ergebnis einer Runde:
  * - Punkte dieser Runde

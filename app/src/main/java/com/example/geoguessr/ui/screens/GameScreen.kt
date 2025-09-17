@@ -18,6 +18,8 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
+ * Final
+ *
  * GameScreen
  *
  * Verantwortlich für:

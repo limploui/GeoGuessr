@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
-
+//Final
 android {
     namespace = "com.example.geoguessr"
     compileSdk = 35

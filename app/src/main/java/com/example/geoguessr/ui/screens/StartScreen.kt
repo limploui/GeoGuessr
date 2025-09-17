@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.example.geoguessr.R
 
 /**
+ * Final
  * StartScreen
  * - Titel + zwei Karten zur Auswahl des Modus
  * - Weltbild am unteren Rand mit kleinem Abstand nach unten
