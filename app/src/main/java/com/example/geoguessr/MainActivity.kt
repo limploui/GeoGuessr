@@ -121,6 +121,7 @@ class MainActivity : AppCompatActivity() {
                 doubleArrayOf(-120.5889, 46.97604, -120.4871, 47.01397),   // Ellensburg US
                 doubleArrayOf(-116.5625, 43.4143, -116.1554, 43.5757)      // Kuna US"
             ),
+            //namenliste
             names = listOf(
                 "Berlin Mitte", "München Altstadt", "Hamburg City", "Köln Innenstadt",
                 "Amvrakia GR", "Athlone IR", "Boisme FR", "Caurel FR", "Chew Valley Lake UK",
@@ -277,9 +278,9 @@ private fun LoadingPanorama() {
 
             AsyncImage(
                 model = ImageRequest.Builder(context)
-                    .data(R.drawable.skateboardloading) // dein animiertes GIF
+                    .data(R.drawable.skateboardloading)
                     .build(),
-                imageLoader = imageLoader,               // ← WICHTIG
+                imageLoader = imageLoader,
                 contentDescription = "Welt lädt",
                 modifier = Modifier.fillMaxWidth(0.5f)
             )
