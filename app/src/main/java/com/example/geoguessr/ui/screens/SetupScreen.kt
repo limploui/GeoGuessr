@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,32 +27,54 @@ import androidx.compose.ui.layout.ContentScale
  */
 @Composable
 fun SetupScreen(
-    modeTitle: String,                  // Überschrift (abhängig vom Modus)
-    initialRounds: Int = 1,             // Startwert Runden
-    initialSeconds: Int = 60,           // Startwert Sekunden
-    onStart: (rounds: Int, seconds: Int) -> Unit // Callback beim Start
+    modeTitle: String,
+    initialRounds: Int = 1,
+    initialSeconds: Int = 60,
+    onStart: (rounds: Int, seconds: Int) -> Unit
 ) {
-    var rounds by remember { mutableStateOf(initialRounds) }
-    var seconds by remember { mutableStateOf(initialSeconds) }
-    var noTimeLimit by remember { mutableStateOf(false) }   // ∞-Zeit an/aus
+    // Letzte *endliche* Zeit merken (für den Fall, dass ∞ wieder ausgeschaltet wird)
+    var lastTimedSeconds by rememberSaveable { mutableStateOf(60) }
+
+    // Aus initialSeconds ableiten, ob „kein Zeitlimit“ aktiv ist
+    var noTimeLimit by rememberSaveable { mutableStateOf(initialSeconds == Int.MAX_VALUE) }
+
+    // Gezeigte Sekunden sind NIE MAX_VALUE – bei ∞ zeigen wir das Zeichen an
+    var seconds by rememberSaveable {
+        mutableStateOf(
+            if (initialSeconds == Int.MAX_VALUE) lastTimedSeconds else initialSeconds.coerceIn(10, 600)
+        )
+    }
+
+    var rounds by rememberSaveable { mutableStateOf(initialRounds.coerceIn(1, 10)) }
+
+    // Falls du per Navigation zurückkommst und andere Startwerte mitbringst → synchronisieren
+    LaunchedEffect(initialSeconds, initialRounds) {
+        rounds = initialRounds.coerceIn(1, 10)
+        if (initialSeconds == Int.MAX_VALUE) {
+            noTimeLimit = true
+            // seconds bleibt ein normaler Wert; Anzeige zeigt "∞"
+        } else {
+            noTimeLimit = false
+            seconds = initialSeconds.coerceIn(10, 600)
+            lastTimedSeconds = seconds
+        }
+    }
 
     // Layout-Tuning für die Bildfläche unten (Breite/Höhe anpassbar)
-    val imageWidthFraction = 0.7f       // Anteil der Bildschirmbreite für das Bild
-    val aspectRatio = 1.6f              // Breite / Höhe (z. B. 16:10 ≈ 1.6)
-    val minImageHeight = 240.dp         // Mindesthöhe der Bildbox
-    val maxImageHeight = 360.dp         // Maximalhöhe der Bildbox
+    val imageWidthFraction = 0.7f
+    val aspectRatio = 1.6f
+    val minImageHeight = 240.dp
+    val maxImageHeight = 360.dp
 
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
     ) {
-        // Höhe der unteren Bildbox aus der gewünschten Breite ableiten
         val desiredWidth = maxWidth * imageWidthFraction
         val desiredHeight = desiredWidth / aspectRatio
         val bottomHeight = desiredHeight.coerceIn(minImageHeight, maxImageHeight)
 
-        // Oberer Bereich: Inhalt kann scrollen, unten Platz für die Bildbox lassen
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -60,7 +83,6 @@ fun SetupScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Titel
             Text(
                 modeTitle,
                 style = MaterialTheme.typography.headlineLarge,
@@ -68,7 +90,7 @@ fun SetupScreen(
                 textAlign = TextAlign.Center
             )
 
-            // Runden-Einstellung
+            // Runden
             SettingCard(
                 title = "Runden",
                 valueText = rounds.toString(),
@@ -78,7 +100,7 @@ fun SetupScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Zeit-Einstellung (mit „x“ für ∞)
+            // Zeit (mit rotem X-Button)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -96,7 +118,6 @@ fun SetupScreen(
                         .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Titel + Toggle für Zeitlimit
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
@@ -104,7 +125,17 @@ fun SetupScreen(
                     ) {
                         Text("Zeit", style = MaterialTheme.typography.titleLarge)
                         FilledTonalButton(
-                            onClick = { noTimeLimit = !noTimeLimit },
+                            onClick = {
+                                if (!noTimeLimit) {
+                                    // ∞ einschalten → aktuelle finite Zeit merken
+                                    lastTimedSeconds = seconds.coerceIn(10, 600)
+                                    noTimeLimit = true
+                                } else {
+                                    // ∞ ausschalten → letzte finite Zeit wiederherstellen
+                                    noTimeLimit = false
+                                    seconds = lastTimedSeconds.coerceIn(10, 600)
+                                }
+                            },
                             modifier = Modifier.size(40.dp),
                             contentPadding = PaddingValues(0.dp),
                             shape = RoundedCornerShape(12.dp),
@@ -114,20 +145,25 @@ fun SetupScreen(
                             )
                         ) { Text("x", style = MaterialTheme.typography.titleMedium) }
                     }
-                    // Minus / Wert / Plus (deaktiviert bei ∞)
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         SquareActionButton(
                             text = "−",
-                            onClick = { seconds = (seconds - 10).coerceAtLeast(10) },
+                            onClick = {
+                                seconds = (seconds - 10).coerceAtLeast(10)
+                                lastTimedSeconds = seconds // damit beim nächsten Re-Enable der gleiche Wert wiederkommt
+                            },
                             enabled = !noTimeLimit
                         )
                         ValueBox(valueText = if (noTimeLimit) "∞" else "${seconds}s")
                         SquareActionButton(
                             text = "+",
-                            onClick = { seconds = (seconds + 10).coerceAtMost(600) },
+                            onClick = {
+                                seconds = (seconds + 10).coerceAtMost(600)
+                                lastTimedSeconds = seconds
+                            },
                             enabled = !noTimeLimit
                         )
                     }
@@ -135,10 +171,9 @@ fun SetupScreen(
             }
 
             Spacer(Modifier.height(16.dp))
-            // Hinweis: Das Bild sitzt unten fix – hier kein Bild mehr einfügen.
         }
 
-        // Unterer Bereich: Weltbild fix am Boden + Start-Button darüber
+        // Unteres Weltbild + Start
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -159,7 +194,7 @@ fun SetupScreen(
                     modifier = Modifier.fillMaxSize()
                 )
                 ElevatedButton(
-                    onClick = { onStart(rounds, if (noTimeLimit) Int.MAX_VALUE else seconds) },
+                    onClick = { onStart(rounds, if (noTimeLimit) Int.MAX_VALUE else seconds.coerceIn(10, 600)) },
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.elevatedButtonColors(
                         containerColor = Color.White,
@@ -177,14 +212,13 @@ fun SetupScreen(
     }
 }
 
-// Kleine Hilfskomponenten (unverändert), kurz kommentiert:
-
+// Hilfskomponenten unverändert
 @Composable
 private fun SettingCard(
-    title: String,                  // Label (z. B. „Runden“)
-    valueText: String,              // angezeigter Wert
-    onMinus: () -> Unit,            // Klick auf „−“
-    onPlus: () -> Unit              // Klick auf „+“
+    title: String,
+    valueText: String,
+    onMinus: () -> Unit,
+    onPlus: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -222,7 +256,7 @@ private fun SettingCard(
 
 @Composable
 private fun SquareActionButton(
-    text: String,                   // „−“ oder „+“
+    text: String,
     onClick: () -> Unit,
     size: Dp = 40.dp,
     enabled: Boolean = true
@@ -250,7 +284,7 @@ private fun SquareActionButton(
 
 @Composable
 private fun ValueBox(
-    valueText: String,              // aktueller Wert (z. B. „5“ oder „∞“)
+    valueText: String,
     minWidth: Dp = 64.dp
 ) {
     Box(
