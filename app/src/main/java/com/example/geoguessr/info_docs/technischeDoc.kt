@@ -2,6 +2,21 @@
  *Final
  * package com.example.geoguessr.info_docs
  *
+ *
+ *  Hinweise:
+ *  Auf dem Emulator auf dem PC ist ein Scrollen im oberen Bereich notwendig, weil das Bild zu groß ist.
+ *  Sonst ist das Interface auf Smartphones sehr übersichtlich.
+ *  Mapillary ist noch sehr langsam. Grund ist die Webview, die man erstmal vorheizen muss.
+ *  Dann lädt die HTML und MapillaryJS bzw. MapillaryCSS vor.
+ *
+ *  Das hat bei mir keine signifikanten Auswirkungen auf die Ladezeit gehabt, sondern im Gegenteil.
+ *
+ *  Zudem sollte das Spiel Idealerweise mit Google Street View laufen.
+ *  Mapillary ist meiner Meinung nach nur ein Provisorium.
+ *
+ *
+ *
+ *
  * Technische Doku – GeoGuezzr (Android, Compose, Mapillary)
  * Die App ist eine kleine, eigenständige Geoguessr-Variante für Android, gebaut mit Jetpack Compose und einer WebView,
  * die den Mapillary-Viewer rendert. Zentral ist ein sauberer Datenfluss. Die MainActivity initialisiert Regionen und Hints,

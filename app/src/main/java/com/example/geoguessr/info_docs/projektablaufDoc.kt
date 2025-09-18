@@ -43,7 +43,4 @@ package com.example.geoguessr.info_docs
  *
  *
  *
- * Hinweise:
- * Auf dem Emulator auf dem PC ist ein Scrollen im oberen Bereich notwendig, weil das Bild zu groß ist.
- * Sonst ist das Interface auf Smartphones sehr übersichtlich.
- * */
+ *  */

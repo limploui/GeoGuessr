@@ -7,7 +7,7 @@ package com.example.geoguessr.info_docs
  * Ziel jeder Runde: Panorama ansehen, Ort auf der Karte tippen, Punkte kassieren.
  *
  * Setup
- *Im Setup stellst du Rundenzahl und Zeitlimit ein; per rotem „x“ schaltest du das Limit auf ∞.
+ * Im Setup stellst du Rundenzahl und Zeitlimit ein; per rotem „x“ schaltest du das Limit auf ∞.
  * „Los geht’s“ unten auf der Weltkarte startet die Partie.
  *
  * Tabs im Spiel
@@ -37,6 +37,7 @@ package com.example.geoguessr.info_docs
  * Rundenende & Finale
  * Nach jeder Runde folgt ein kurzer Ergebnisschirm, dann geht’s weiter.
  * Am Ende siehst du Gesamtscore, Gesamtentfernung und alle Rundendetails — „Neues Spiel“ setzt alles zurück.
+ *
  *
  *
  * */
