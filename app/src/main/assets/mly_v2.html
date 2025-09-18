@@ -54,7 +54,7 @@
 <noscript>Diese Seite benötigt JavaScript.</noscript>
 
 <script>
-    // ===== Fehler-Overlay (global) ==========================================
+    //Fehler-Overlay (global)
     (function attachGlobalErrorHandlers() {
       const errBox = document.getElementById("err");
       function showErr(msg) {
@@ -67,7 +67,7 @@
       window.addEventListener("unhandledrejection", (e) => showErr(e.reason || e));
     })();
 
-    // ===== Globaler State für Viewer & Warteschlange ========================
+    //  Globaler State für Viewer & Warteschlange
     window.MLY = {
       viewer: null,          // Mapillary Viewer-Instanz
       ready: false,          // wird true, wenn 'load' gefeuert hat
@@ -99,7 +99,7 @@
       return ok;
     }
 
-    // ===== Init: wird aus Android via evaluateJavascript aufgerufen =========
+    // Init: wird aus Android via evaluateJavascript aufgerufen
     window.init = function (accessToken, imageId) {
       console.log("[MJS] init called. mapillary =", typeof window.mapillary);
 
@@ -176,7 +176,7 @@
       }, 2000);
     };
 
-    // ===== Bildwechsel: wird aus Android aufgerufen =========================
+    // Bildwechsel: wird aus Android aufgerufen
     window.setImage = function (imageId) {
       if (!window.MLY.viewer || !window.MLY.ready) {
         console.log("[MJS] viewer not ready; queue", imageId);

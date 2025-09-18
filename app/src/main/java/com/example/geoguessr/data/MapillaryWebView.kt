@@ -26,12 +26,16 @@ fun MapillaryViewer(
 ) {
     // Merker, ob HTML geladen ist und ob JS init schon passiert ist
     var pageLoaded by remember { mutableStateOf(false) }
+    // Merker, ob init() schon gerufen wurde, also ob die JS-Bridge (also die Kommunikation HTML <-> Android) steht
     var inited by remember { mutableStateOf(false) }
+    // Merker, welches imageId zuletzt gesetzt wurde (damit man nicht bei jedem Compose-Update die gleiche ID nochmal setzt)
     var lastImageId by remember { mutableStateOf<String?>(null) }
 
     AndroidView(
         modifier = modifier,
         //Hier wird der WebView gebaut, eingerichtet und es wird eine HTML-Datei geladen.
+        // Die jeweiligen settings bestehen aus einer Mischung von was Mapillary empfiehlt
+        // Auf diese Weise kann man die HTML-Datei in den Assets laden.
         factory = { context ->
             WebView(context).apply {
                 settings.javaScriptEnabled = true
@@ -60,6 +64,7 @@ fun MapillaryViewer(
                 }, "AndroidBridge")
 
                 // WebChromeClient: Console-Logs in Logcat spiegeln
+                // Zu den Problemen gehören bspw. Fehler, wenn etwas nicht geladen werden kann.
                 webChromeClient = object : WebChromeClient() {
                     override fun onConsoleMessage(message: ConsoleMessage): Boolean {
                         Log.i("MJS", "[console] ${message.message()} @${message.sourceId()}:${message.lineNumber()}")
@@ -68,16 +73,18 @@ fun MapillaryViewer(
                 }
 
                 //WebViewClient: onPageFinished feuert, wenn die HTML fertig geladen ist.
+                // Die Logs geben an, ob die Seite fertig geladen ist.
+                // Dazu gehört bspw. auch die ImageId, die in der HTML per JS gesetzt wird.
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String) {
                         super.onPageFinished(view, url)
-                        Log.d("MJS", "✅ HTML geladen: $url")
+                        Log.d("MJS", "HTML geladen: $url")
                         pageLoaded = true
                         // HTML -> init(accessToken, imageId)
                         evaluateJavascript(
                             "window.init(${json(accessToken)}, ${json(imageId)});"
                         ) { _ ->
-                            Log.d("MJS", "➡️ init(accessToken, imageId) gerufen")
+                            Log.d("MJS", "init(accessToken, imageId) gerufen")
                             inited = true
                             lastImageId = imageId
 

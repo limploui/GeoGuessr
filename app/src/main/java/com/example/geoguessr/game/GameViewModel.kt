@@ -54,8 +54,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
 
 
-    // WICHTIG: Um JVM-Namenskonflikte zu vermeiden (Property-Setter vs. Fun-Namen),
-    // keine Methoden "setXxx" benutzen, sondern andere Namen:
+
     //setGameMode(m): setzt den Modus (ohne Property-Namenskonflikt, deshalb nicht setMode).
     fun setGameMode(m: GameMode) { mode = m }
 

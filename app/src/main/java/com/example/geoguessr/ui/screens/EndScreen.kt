@@ -35,8 +35,11 @@ fun EndScreen(
 ) {
     // gleiche Bottom-Bild-Logik wie im SetupScreen
     val imageWidthFraction = 0.7f
+    // ist das Seitenverhältnis der Weltkarte
     val aspectRatio = 1.6f
+    // min/max Höhe der Bildbox
     val minImageHeight = 240.dp
+    // max 360dp, damit auf kleinen Geräten nicht zuviel Platz verschwendet wird
     val maxImageHeight = 360.dp
 
     // Gesamthöhe der Box unten berechnen
@@ -50,7 +53,7 @@ fun EndScreen(
         val desiredHeight = desiredWidth / aspectRatio
         val bottomHeight = desiredHeight.coerceIn(minImageHeight, maxImageHeight)
 
-        // OBERER BEREICH: Inhalt + scrollbare Ergebnisliste
+        // Oberer Bereich: Inhalt + scrollbare Ergebnisliste
         // Hier wird das Ergebnis angezeigt (Entfernung, Punkte, Liste aller Runden)
         Column(
             modifier = Modifier
@@ -126,7 +129,7 @@ fun EndScreen(
             Spacer(Modifier.height(8.dp))
         }
 
-        // UNTERER BEREICH: Weltkarte fix, Button zentriert darauf
+        // Unterer Bereich: Weltkarte fix, Button zentriert darauf
         // Hier kann man weiterklicken, um ein neues Spiel zu starten
         Box(
             modifier = Modifier

@@ -17,22 +17,22 @@ import kotlin.random.Random
 // Außerdem schützt es vor Race Conditions (späte Netzantworten).
 class ViewModeltwo(application: Application) : AndroidViewModel(application) {
 
-    // --- Hinweise ---
+    // Hinweise
     private var regionHints: Map<String, List<String>> = emptyMap()
     private val _currentHints = MutableLiveData<List<String>>(emptyList())
     val currentHints: LiveData<List<String>> = _currentHints
 
-    // --- Region/Last selection ---
+    // Region/Last selection
     private var lastRegionIdx: Int = -1
     private var lastImageId: String? = null
 
     private val mapillaryClient = MapillaryClient(application)
 
-    // --- Lade-Schutz (Schritt 2) ---
+    // Lade-Schutz (Schritt 2)
     private var currentLoadJob: Job? = null
     private var requestSeq: Long = 0L
 
-    // --- Regionen ---
+    // Regionen
     private var regions: List<DoubleArray> = emptyList() // [minLon, minLat, maxLon, maxLat]
     private var regionNames: List<String> = emptyList()
 
@@ -134,8 +134,8 @@ class ViewModeltwo(application: Application) : AndroidViewModel(application) {
     val currentRegionName: LiveData<String?> = _currentRegionName
 
     //Final
-    /** Regionen + optionale Hinweise setzen
-     * Setzt, welche Regionen/Namen/Hints verwendet werden.*/
+    //Regionen + optionale Hinweise setzen
+    //Setzt, welche Regionen/Namen/Hints verwendet werden.
     fun setRegions(
         bboxes: List<DoubleArray>,
         names: List<String>? = null,
@@ -150,7 +150,7 @@ class ViewModeltwo(application: Application) : AndroidViewModel(application) {
         lastRegionIdx = -1
     }
 
-    /** Bild aus zufälliger (nicht zuletzt genutzter) Region laden */
+    // Bild aus zufälliger (nicht zuletzt genutzter) Region laden
     fun loadRandomImage() {
         currentLoadJob?.cancel()
         val myReq = ++requestSeq
@@ -223,7 +223,7 @@ class ViewModeltwo(application: Application) : AndroidViewModel(application) {
 
 
 
-    /** Fallback-Hints aus BBox/Name */
+    // Fallback-Hints aus BBox/Name
     private fun generateFallbackHints(name: String?, bbox: DoubleArray): List<String> {
         val centerLat = (bbox[1] + bbox[3]) / 2.0
         val centerLon = (bbox[0] + bbox[2]) / 2.0
@@ -239,7 +239,7 @@ class ViewModeltwo(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    /** BBox vergrößern */
+    // BBox vergrößern
     private fun expandBbox(bbox: DoubleArray, delta: Double): DoubleArray {
         val (minLon, minLat, maxLon, maxLat) = bbox
         return doubleArrayOf(
@@ -250,7 +250,7 @@ class ViewModeltwo(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    /** Nächsten Regionsindex wählen (≠ letzter) */
+    // Nächsten Regionsindex wählen (≠ letzter)
     private fun pickNextRegionIndex(): Int {
         if (regions.size <= 1) return 0
         var idx: Int
@@ -258,7 +258,7 @@ class ViewModeltwo(application: Application) : AndroidViewModel(application) {
         return idx
     }
 
-    /** Erst Bild leeren, optional Hints leeren, dann laden */
+    // Erst Bild leeren, optional Hints leeren, dann laden
     fun loadRandomImageClearing() {
         _image.value = null
         // _currentHints.value = emptyList() // optional, wird ohnehin gleich wieder gesetzt

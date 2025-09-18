@@ -8,6 +8,9 @@ import org.osmdroid.config.Configuration
 import java.io.File
 
 //Final
+// Application-Klasse, wird beim Start der App initialisiert.
+// GeoGuessrApp ist für die Initialisierung von osmdroid und anderen globalen Einstellungen zuständig.
+// Hauptfunktion hier: initOsmdroid(), die osmdroid konfiguriert.
 class GeoGuessrApp : Application() {
     override fun onCreate() {
         super.onCreate()

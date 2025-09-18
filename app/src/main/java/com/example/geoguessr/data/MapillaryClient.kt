@@ -38,6 +38,7 @@ class MapillaryClient(context: Context) {
 
     // HTTP-Client mit Interceptors
     // Timeouts & Retry: stabileres Netzverhalten.
+    // Der HTTP-Client macht die eigentliche Arbeit der Netzwerkkommunikation.
     private val client = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .addInterceptor(logging)
@@ -47,6 +48,9 @@ class MapillaryClient(context: Context) {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
+    // Retrofit-API-Client
+    // Basis-URL, JSON-Konverter, API-Interface
+    // Diese Instanz wird für alle API-Aufrufe verwendet.
     private val api: MapillaryApi = Retrofit.Builder()
         .baseUrl("https://graph.mapillary.com/")
         .client(client)
@@ -54,8 +58,9 @@ class MapillaryClient(context: Context) {
         .build()
         .create(MapillaryApi::class.java)
 
-    // --- DTO fürs UI ---
+
     // Vereinfachte Bilddaten fürs UI
+    // Imagedata ist die vereinfachte Datenklasse, die nur die für die App relevanten Felder enthält.
     data class ImageData(
         val id: String,
         val lon: Double,
@@ -65,12 +70,12 @@ class MapillaryClient(context: Context) {
         val isPano: Boolean
     )
 
-    /**
-     * Zufälliges Panorama (strict).
-     * Gibt null zurück, wenn kein Panorama gefunden wurde.
-     * Bbox-Format: "minLon,minLat,maxLon,maxLat" (ohne Leerzeichen)
-     * Viel log für das Debugging.Haben wir Panos, wenn neinn, warum nicht?
-     */
+
+     // Zufälliges Panorama (strict).
+     //Gibt null zurück, wenn kein Panorama gefunden wurde.
+     //Bbox-Format: "minLon,minLat,maxLon,maxLat" (ohne Leerzeichen)
+     //Viel log für das Debugging.Haben wir Panos, wenn neinn, warum nicht?
+
     suspend fun getRandomPano(bbox: String): ImageData? =
         withContext(Dispatchers.IO) {
             try {
@@ -103,11 +108,7 @@ class MapillaryClient(context: Context) {
             }
         }
 
-    /**
-     * Allgemeines Bild – kann Panoramen oder Non-Panos zurückgeben.
-     *
-     *
-     */
+    // Allgemeines Bild – kann Panoramen oder Non-Panos zurückgeben.
     suspend fun getRandomImage(bbox: String, onlyPanorama: Boolean? = null): ImageData? =
         withContext(Dispatchers.IO) {
             try {

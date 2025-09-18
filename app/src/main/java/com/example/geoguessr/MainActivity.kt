@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     //Danach baut setContent { … } die komplette Compose-Oberfläche:
     //Zwischendrin reden die Screens mit den ViewModels:
     //GameViewModel (Punkte, Runden, Zeit).
+    // Hauptfunktionier hier: ViewModeltwo (Bild holen, BBox, Hints).
 
     private val vm: GameViewModel by viewModels()
     private val viewModelTwo: ViewModeltwo by viewModels()
@@ -51,7 +52,7 @@ class MainActivity : AppCompatActivity() {
 
         // Hints definieren (max. 5 pro Region werden genutzt)
         val HINTS: Map<String, List<String>> = mapOf(
-            // … deine HINTS wie in deinem Snippet …
+
         )
 
         // 1) Regionen + Hints setzen
@@ -167,7 +168,7 @@ class MainActivity : AppCompatActivity() {
                                 }
                             )
                         }
-
+                        // Hier wird der übergebene Titel (Modus) ausgelesen
                         composable(Route.Setup.path) { backStack ->
                             val modeTitle = backStack.arguments?.getString("mode") ?: "Spiel"
                             SetupScreen(
@@ -183,7 +184,8 @@ class MainActivity : AppCompatActivity() {
                                 }
                             )
                         }
-
+                        // Hier wird das Spiel gespielt
+                        // und die Werte item, bbox, regionHints aus ViewModeltwo geholt
                         composable(Route.Game.path) {
                             val item by viewModelTwo.image.observeAsState()
                             val bbox by viewModelTwo.currentBbox.observeAsState()
@@ -216,11 +218,11 @@ class MainActivity : AppCompatActivity() {
                                         }
                                     }
                                 )
-                            } else {
+                            } else { // Wenn noch kein Bild da, Lade-UI
                                 LoadingPanorama()
                             }
                         }
-
+                        // Ergebnis der Runde anzeigen
                         composable(Route.Result.path) {
                             ResultScreen(
                                 roundPoints = vm.lastRoundPoints,
@@ -232,7 +234,7 @@ class MainActivity : AppCompatActivity() {
                                 }
                             )
                         }
-
+                        // EndScreen: Gesamtübersicht & „Neues Spiel“.
                         composable(Route.End.path) {
                             EndScreen(
                                 totalPoints = vm.totalPoints,
@@ -253,7 +255,7 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-/** Lade-UI für den GameScreen: Weltkarte mittig, Text darüber. */
+// Lade-UI für den GameScreen: Weltkarte mittig, Text darüber.
 @Composable
 private fun LoadingPanorama() {
     val context = LocalContext.current
@@ -262,7 +264,7 @@ private fun LoadingPanorama() {
     val imageLoader = remember {
         ImageLoader.Builder(context).components {
             if (Build.VERSION.SDK_INT >= 28) {
-                add(ImageDecoderDecoder.Factory()) // modern (GIF/anim. WebP)
+                add(ImageDecoderDecoder.Factory()) // modern (GIF/)
             } else {
                 add(GifDecoder.Factory())          // Fallback für < 28
             }

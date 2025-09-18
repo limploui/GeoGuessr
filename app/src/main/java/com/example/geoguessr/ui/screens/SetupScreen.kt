@@ -49,7 +49,7 @@ fun SetupScreen(
 
     var rounds by rememberSaveable { mutableStateOf(initialRounds.coerceIn(1, 10)) }
 
-    // Falls du per Navigation zurückkommst und andere Startwerte mitbringst → synchronisieren
+    // Falls man per Navigation zurückkommt und andere Startwerte mitbringtt → synchronisieren
     LaunchedEffect(initialSeconds, initialRounds) {
         rounds = initialRounds.coerceIn(1, 10)
         if (initialSeconds == Int.MAX_VALUE) {
@@ -64,19 +64,28 @@ fun SetupScreen(
 
     // Layout-Tuning für die Bildfläche unten (Breite/Höhe anpassbar)
     val imageWidthFraction = 0.7f
+    // ist das Seitenverhältnis der Weltkarte
     val aspectRatio = 1.6f
+    // min/max Höhe der Bildbox
     val minImageHeight = 240.dp
+    // max 360dp, damit auf kleinen Geräten nicht zuviel Platz verschwendet wird
     val maxImageHeight = 360.dp
 
+    // Gesamthöhe der Box unten berechnen
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
     ) {
+        // Höhe der Bildbox so bestimmen, dass sie zur gewünschten Bildbreite passt
         val desiredWidth = maxWidth * imageWidthFraction
+        // desiregedHeight aus dem Seitenverhältnis ableiten
         val desiredHeight = desiredWidth / aspectRatio
+        // bottomHeight ist die tatsächlich verwendete Höhe der Bildbox, also die Höhe der Box unten
         val bottomHeight = desiredHeight.coerceIn(minImageHeight, maxImageHeight)
 
+        // Oberer Bereich: Titel + Einstellungen (scrollbar)
+        // Hier stellt der User Rundenanzahl und Zeit ein
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -116,13 +125,13 @@ fun SetupScreen(
                 ),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Row(
+                Row( // Inhalt der Zeit-Card
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
+                    Row( // linke Seite mit Titel + ∞-Button
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -150,9 +159,11 @@ fun SetupScreen(
                         ) { Text("x", style = MaterialTheme.typography.titleMedium) }
                     }
                     Row(
+                        // rechte Seite mit - / Zeit / +
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // - ist um 10s reduzieren
                         SquareActionButton(
                             text = "−",
                             onClick = {
@@ -162,6 +173,7 @@ fun SetupScreen(
                             enabled = !noTimeLimit
                         )
                         ValueBox(valueText = if (noTimeLimit) "∞" else "${seconds}s")
+                        // + ist um 10s erhöhen
                         SquareActionButton(
                             text = "+",
                             onClick = {
@@ -179,6 +191,7 @@ fun SetupScreen(
 
         // Unteres Weltbild + Start
         // Button auf der Weltkarte zentriert
+        // (die Box hat eine feste Höhe, die wir oben berechnet haben)
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -186,7 +199,8 @@ fun SetupScreen(
                 .height(bottomHeight),
             contentAlignment = Alignment.Center
         ) {
-            Box(
+            Box( // Box für die Weltkarte
+                 // (damit der Button zentriert darauf liegt)
                 modifier = Modifier
                     .fillMaxWidth(imageWidthFraction)
                     .fillMaxHeight(),
@@ -198,7 +212,7 @@ fun SetupScreen(
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize()
                 )
-                ElevatedButton(
+                ElevatedButton( // Hier der Button „Los geht’s“
                     onClick = { onStart(rounds, if (noTimeLimit) Int.MAX_VALUE else seconds.coerceIn(10, 600)) },
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.elevatedButtonColors(
@@ -227,7 +241,8 @@ private fun SettingCard(
     onMinus: () -> Unit,
     onPlus: () -> Unit
 ) {
-    Card(
+    Card( // die ganze Card
+         // (für Runden oder Zeit)
         modifier = Modifier
             .fillMaxWidth()
             .height(60.dp),
@@ -262,7 +277,7 @@ private fun SettingCard(
 }
 
 // Quadratischer Button mit Text in der Mitte
-// (für + und −)
+// (für + und −), wird ja bspw. direkt in der SettingCard verwendet
 @Composable
 private fun SquareActionButton(
     text: String,
@@ -270,7 +285,7 @@ private fun SquareActionButton(
     size: Dp = 40.dp,
     enabled: Boolean = true
 ) {
-    FilledTonalButton(
+    FilledTonalButton( //Design der Buttons
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier.size(size),
@@ -283,7 +298,7 @@ private fun SquareActionButton(
             disabledContentColor = Color(0xFF9E9E9E)
         )
     ) {
-        Text(
+        Text(// Inhalt des Buttons
             text,
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center

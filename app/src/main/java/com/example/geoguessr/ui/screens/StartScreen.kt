@@ -40,7 +40,7 @@ fun StartScreen(
             modifier = Modifier.padding(top = 32.dp, bottom = 48.dp)
         )
 
-        // Modus-Auswahl
+        // Modus-Auswahl, also Normales Spiel oder Hinweis-Spiel
         ModeCard("Normales Spiel", onChooseNormal)
         Spacer(Modifier.height(16.dp))
         ModeCard("Hinweis Spiel", onChooseHint)
@@ -60,7 +60,8 @@ fun StartScreen(
     }
 }
 
-/** Kleine Karte als klickbarer Modus-Button. */
+// Kleine Karte als klickbarer Modus-Button.
+// Hier wird der Titel angezeigt und der onClick-Callback gesetzt.
 @Composable
 private fun ModeCard(title: String, onClick: () -> Unit) {
     Card(
