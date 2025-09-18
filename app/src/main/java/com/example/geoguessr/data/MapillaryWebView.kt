@@ -22,7 +22,7 @@ fun MapillaryViewer(
     accessToken: String,
     imageId: String,
     modifier: Modifier = Modifier,
-    onFirstImageRendered: () -> Unit = {}   // ⬅️ NEU: Signal, wenn der erste Frame sichtbar ist
+    onFirstImageRendered: () -> Unit = {}   //  Signal, wenn der erste Frame sichtbar ist
 ) {
     // Merker, ob HTML geladen ist und ob JS init schon passiert ist
     var pageLoaded by remember { mutableStateOf(false) }
@@ -47,10 +47,10 @@ fun MapillaryViewer(
                 settings.allowUniversalAccessFromFileURLs = true
                 settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW // wichtig
 
-                // ⬅️ NEU: vermeidet schwarzes Blitzen hinter deinem Overlay
+                // vermeidet schwarzes Blitzen hinter deinem Overlay
                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
-                // ⬅️ NEU: JS-Bridge registrieren (wird aus dem HTML aufgerufen)
+                // JS-Bridge registrieren (wird aus dem HTML aufgerufen)
                 addJavascriptInterface(object {
                     @JavascriptInterface
                     fun onFirstImageRendered() {
@@ -81,7 +81,7 @@ fun MapillaryViewer(
                             inited = true
                             lastImageId = imageId
 
-                            // ⬅️ NEU: Hook in den Viewer, um 'erstes Bild sichtbar' zu signalisieren
+                            // Hook in den Viewer, um 'erstes Bild sichtbar' zu signalisieren
                             // Wir versuchen mehrere globale Namen: _viewer | viewer | mly
                             val hook = """
                                 (function(){
