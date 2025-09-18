@@ -2,6 +2,7 @@ package com.example.geoguessr.info_docs
 
 /**
  * Final
+ *
  * Am Anfang stand die Suche nach einem halbwegs seriösen Street-View-Anbieter – und das war überraschend zäh.
  * Google Street View fiel wegen der Paywall sofort raus, also habe ich Alternativen sondiert und mich schließlich
  * für Mapillary entschieden. Von dort aus begann der lange Weg zur stabilen Verbindung zwischen App und Dienst.

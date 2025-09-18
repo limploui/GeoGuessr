@@ -1,17 +1,21 @@
+package com.example.geoguessr.info_docs
+
 /**
  *Final
- * package com.example.geoguessr.info_docs
+ *
  *
  *
  *  Hinweise:
- *  Auf dem Emulator auf dem PC ist ein Scrollen im oberen Bereich notwendig, weil das Bild zu groß ist.
+ *  1.) Auf dem Emulator auf dem PC ist ein Scrollen im oberen Bereich notwendig, weil das Bild zu groß ist.
  *  Sonst ist das Interface auf Smartphones sehr übersichtlich.
- *  Mapillary ist noch sehr langsam. Grund ist die Webview, die man erstmal vorheizen muss.
+ *
+ *  2.) Mapillary ist noch sehr langsam. Grund ist die Webview. Theoretisch kann man die vorladen,
+ *  die CSS bzw. JS-Dateien auch lokal speichern.
  *  Dann lädt die HTML und MapillaryJS bzw. MapillaryCSS vor.
+ *  Dadurch hatte ich allerdings sehr kurze und sehr lange Ladezeiten.
+ *  Aus dem Grund bin ich wieder auf die Online-Variante gegangen, weil die konstant gleich schnell ist.
  *
- *  Das hat bei mir keine signifikanten Auswirkungen auf die Ladezeit gehabt, sondern im Gegenteil.
- *
- *  Zudem sollte das Spiel Idealerweise mit Google Street View laufen.
+ *  3.) Zudem sollte das Spiel Idealerweise mit Google Street View laufen.
  *  Mapillary ist meiner Meinung nach nur ein Provisorium.
  *
  *
