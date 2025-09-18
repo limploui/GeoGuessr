@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ✅ 0) Hints definieren (max. 5 pro Region werden genutzt)
+        // Hints definieren (max. 5 pro Region werden genutzt)
         val HINTS: Map<String, List<String>> = mapOf(
             // … deine HINTS wie in deinem Snippet …
         )
