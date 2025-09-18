@@ -92,7 +92,8 @@ fun SetupScreen(
                 textAlign = TextAlign.Center
             )
 
-            // Runden
+            // Runden,die man nach Bedarf anpassen kann
+            // (min 1, max 10)
             SettingCard(
                 title = "Runden",
                 valueText = rounds.toString(),
@@ -103,6 +104,7 @@ fun SetupScreen(
             Spacer(Modifier.height(16.dp))
 
             // Zeit (mit rotem X-Button)
+            // (min 10s, max 600s, oder ∞)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -176,6 +178,7 @@ fun SetupScreen(
         }
 
         // Unteres Weltbild + Start
+        // Button auf der Weltkarte zentriert
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -214,7 +217,9 @@ fun SetupScreen(
     }
 }
 
-// Hilfskomponenten unverändert
+// Hilfskomponenten unverändert, nur in diesen File verschoben
+// Darauf basieren die SettingCards oben
+// (Runden, Zeit)
 @Composable
 private fun SettingCard(
     title: String,
@@ -256,6 +261,8 @@ private fun SettingCard(
     }
 }
 
+// Quadratischer Button mit Text in der Mitte
+// (für + und −)
 @Composable
 private fun SquareActionButton(
     text: String,
@@ -284,6 +291,8 @@ private fun SquareActionButton(
     }
 }
 
+// Box mit Mindestbreite, die den Wert (Runden, Zeit) anzeigt
+// (damit die Buttons nicht wandern, wenn die Zahl sich ändert)
 @Composable
 private fun ValueBox(
     valueText: String,

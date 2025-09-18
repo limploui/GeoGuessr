@@ -51,6 +51,7 @@ fun EndScreen(
         val bottomHeight = desiredHeight.coerceIn(minImageHeight, maxImageHeight)
 
         // OBERER BEREICH: Inhalt + scrollbare Ergebnisliste
+        // Hier wird das Ergebnis angezeigt (Entfernung, Punkte, Liste aller Runden)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -69,6 +70,7 @@ fun EndScreen(
             )
 
             // Scrollbare Ergebnisliste in Card
+            // Wenn zu viele Runden, dann kann man scrollen
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -81,7 +83,7 @@ fun EndScreen(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Kopfzeile
+                    // Kopfzeile der Tabelle, Einträge darunter
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -92,7 +94,7 @@ fun EndScreen(
                     }
                     Divider()
 
-                    // Einzelne Runden
+                    // Einzelne Rundenergebnisse, also Rundennummer, Distanz, Punkte
                     results.forEachIndexed { idx, r ->
                         Row(
                             Modifier.fillMaxWidth(),
@@ -105,7 +107,7 @@ fun EndScreen(
                     }
 
                     Divider(Modifier.padding(top = 8.dp))
-                    // Summen
+                    // Summen der Spalten (Entfernung, Punkte)
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -120,11 +122,12 @@ fun EndScreen(
                     }
                 }
             }
-            // hier KEIN regulärer Button – der sitzt unten auf der Weltkarte
+
             Spacer(Modifier.height(8.dp))
         }
 
         // UNTERER BEREICH: Weltkarte fix, Button zentriert darauf
+        // Hier kann man weiterklicken, um ein neues Spiel zu starten
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)

@@ -30,10 +30,10 @@ fun ResultScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Überschrift
+        // Überschrift der Zwischenübersicht
         Text("Karte – Ergebnis", style = MaterialTheme.typography.headlineMedium)
 
-        // Punkte
+        // Punkte angezeigt
         Text(
             "Deine Punktzahl: $roundPoints",
             style = MaterialTheme.typography.titleLarge
