@@ -22,13 +22,13 @@ interface MapillaryApi {
     ): MapillaryResponse
 }
 
-/** Top-Level Antwort der Graph API: {"data":[ ... ]} */
+//Top-Level Antwort der Graph API: {"data":[ ... ]}
 //Die Anwort der API wird in diese Datenklassen gemappt
 data class MapillaryResponse(
     val data: List<MapillaryImage>?
 )
 
-/** Entspricht den angefragten Feldern in `fields=` */
+// Entspricht den angefragten Feldern in `fields=`
 //Hier die Datenklasse im Detail
 data class MapillaryImage(
     val id: String?,
@@ -38,7 +38,7 @@ data class MapillaryImage(
     val is_pano: Boolean?                     // true = 360°
 )
 
-/** GeoJSON Point, wie von Mapillary geliefert */
+// GeoJSON Point, wie von Mapillary geliefert
 //Die Mapillary-API (genauer: die Graph API) verwendet den Standard GeoJSON für Geokoordinaten.
 //Das heißt: egal ob ein Punkt, eine Linie oder ein Polygon – alles kommt in diesem einheitlichen JSON-Schema.
 data class GeoJSONPoint(
